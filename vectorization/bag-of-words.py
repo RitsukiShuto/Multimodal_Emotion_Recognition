@@ -17,21 +17,22 @@ def read_csv():
     return docs
 
 # 辞書を作る
-dct = Dictionary()
-words_all = read_csv()
+words_all = read_csv()      # csv読み込み
+dct = Dictionary()          # 辞書作成
+
 for sentence in words_all:
     line = str(sentence)
 
     # 辞書の更新
-    # All tokens should be already tokenized and normalized.
     dct.add_documents([line.split()])
 
 word2id = dct.token2id # 単語 -> ID
 print(word2id)
 
+# 文をBoWに変換
 words_all = read_csv()
 bow_set = []
-# 文をBoWに変換
+
 for sentence in words_all:
     line = str(sentence)
 
