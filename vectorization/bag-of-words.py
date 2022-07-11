@@ -8,19 +8,17 @@ import MeCab as mecab
 from gensim.corpora import Dictionary
 from gensim import matutils as mtu
 
-words_all = []
-words = []
-cnt_speech = 0
+def read_csv():
+    # csvを読み込む
+    docs = open("../data/wakachigaki/wakati.csv", "r", encoding="utf-8", errors="", newline="")       # TODO: 変更せよ
+    f = csv.reader(docs, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
+    header = next(f)    # ヘッダをスキップ
 
-# csvを読み込む
-words_all = open("../wakati.csv", "r", encoding="utf-8", errors="", newline="")       # TODO: 変更せよ
-f = csv.reader(words_all, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
-header = next(f)    # ヘッダをスキップ
-print(words_all)
+    return docs
 
 # 辞書を作る
 dct = Dictionary()
-
+words_all = read_csv()
 for sentence in words_all:
     line = str(sentence)
 
@@ -31,6 +29,7 @@ for sentence in words_all:
 word2id = dct.token2id # 単語 -> ID
 print(word2id)
 
+words_all = read_csv()
 bow_set = []
 # 文をBoWに変換
 for sentence in words_all:
@@ -45,7 +44,6 @@ for sentence in words_all:
     print(bow_format)
 
     bow = mtu.corpus2dense([bow_format], num_terms=len(dct)).T[0]
-
     print("BoW")
     print(bow)
 
