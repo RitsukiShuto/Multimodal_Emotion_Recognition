@@ -31,12 +31,6 @@ for sentence in words_all:
 word2id = dct.token2id # 単語 -> ID
 print(word2id)
 
-# csvを読み込む
-words_all = open("../wakati.csv", "r", encoding="utf-8", errors="", newline="")       # TODO: 変更せよ
-f = csv.reader(words_all, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
-header = next(f)    # ヘッダをスキップ
-#print(words_all)
-
 bow_set = []
 # 文をBoWに変換
 for sentence in words_all:
