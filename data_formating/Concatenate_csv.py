@@ -1,9 +1,12 @@
 # Created by RitsukiShuto on 2022/06/28.
 # csvファイルを連結する
 #
-from ntpath import join
 import pandas as pd
 import glob
+
+import numpy as np
+
+import re
 
 csv_list = glob.glob("../data/trans/*.csv")
 join_csv = pd.read_csv("../data/eval/category.csv", encoding="UTF-8")
