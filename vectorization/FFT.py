@@ -1,34 +1,32 @@
 # Created by RitsukiShuto on 2022/06/22.
 # wavファイルを取得してFFTを行う。<試作版>
 #
-import wave
 import glob
-import os
-
-import numpy as np
-import scipy as sp
-from scipy.fft import fft, fftfreq
-from scipy.io.wavfile import read, write
-
 import pandas as pd
-import matplotlib.pyplot as plt
+import wave
+import numpy as np
 
-# PATHを指定
-data_dir = "../train_data/sound/"
-save_dir = "../train_data/FFT/"
+wav_list = glob.glob("../data/wav/labeled/*.wav")
 
-N = 5000
+fft_list = []
+for wav_file in wav_list:
+    #print(wav_file)        # DEBUG
 
-dir_list = glob.glob(data_dir + "*")
+    w = wave.open(wav_file, 'rb')
+    data = w.readframes(w.getnframes())
+    w.close()
 
-for dir_name in dir_list:
-    file_list = glob.glob(dir_name + "/*.wav")
-    # print("open", dir_name)    # DEBUG
+    fs = w.getframerate()
+    s = (np.frombuffer(data, dtype="int16") / 32767.0)[0:fs]
 
-    for file_name in file_list:
-        # print("open", file_name)    # DEBUG
-        fs, data = read(file_name)
+    F = np.fft.fft(s)
+    F_abs = np.abs(F)
+    F_a = F_abs / fs * 2
+    F_a[0] = F_abs[0] / fs
 
-        print(os.path.basename(file_name))
-        # X = fft(data)
-        # print(X.shape)
+    fft_list.append(F_a)
+    #print(F_a)     # DEBUG
+    print(F_a.shape)        # DEBUG
+
+# BUG: wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生まれcsvとして保存できない
+# np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')

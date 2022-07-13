@@ -9,8 +9,8 @@ import pandas as pd
 
 wav_dir = "../OGVC/OGVC_Vol1/Natural/wav/"
 csv_dir = "../data/supervised_list.csv"
-labeled_dir = "../data/wav/new_ver/labeled/"
-un_labeled_dir = "../data/wav/new_ver/un_labeled/"
+labeled_dir = "../data/wav/labeled/"
+un_labeled_dir = "../data/wav/un_labeled/"
 
 def split_wav(row, path):
     wav_data = AudioSegment.from_file(wav_dir + str(row[0]) + ".wav")
@@ -28,8 +28,8 @@ def main():
     for row in csv_file.values:
         print(row[6])
 
-        if pd.isnull(row[6]):
-            split_wav(row, un_labeled_dir)
+        if pd.isnull(row[9]):
+            # split_wav(row, un_labeled_dir)
             print("UN LABELED")
         else:
             split_wav(row, labeled_dir)
