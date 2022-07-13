@@ -28,5 +28,5 @@ for wav_file in wav_list:
     #print(F_a)     # DEBUG
     print(F_a.shape)        # DEBUG
 
-# BUG: wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生まれcsvとして保存できない
+# BUG:wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生じcsvとして保存できない
 # np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')
