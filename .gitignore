@@ -1,0 +1,12 @@
+OGVC
+train_data
+.vscode
+word2vec.gensim.model
+jwsan-2145.csv
+bag-of-words.csv
+wakati.csv
+wakati.txt
+data
+vector
+evaluate_japanese_w2v
+vectorization/fft_dbg.txt
