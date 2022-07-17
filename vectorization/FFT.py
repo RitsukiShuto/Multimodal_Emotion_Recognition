@@ -26,7 +26,7 @@ for wav_file in wav_list:
 
     fft_list.append(F_a)
     #print(F_a)     # DEBUG
-    print(F_a.shape)        # DEBUG
+    #print(F_a.shape)        # DEBUG
 
-# BUG:wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生じcsvとして保存できない
-# np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')
+# BUG: wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生じcsvとして保存できない
+np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')
