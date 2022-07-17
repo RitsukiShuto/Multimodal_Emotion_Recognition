@@ -21,8 +21,8 @@ def MFCC(file_name):
     list_MFCC.append(ceps)
 
 # PATHを指定
-data_dir = "../train_data/sound/"
-save_dir = "../train_data/MFCC/MFCC.csv"
+data_dir = "../data/wav/labeled/"
+save_dir = "../vector/MFCC/MFCC.csv"
 
 list_MFCC = []
 
