@@ -25,8 +25,8 @@ for wav_file in wav_list:
     F_a[0] = F_abs[0] / fs
 
     fft_list.append(F_a)
-    #print(F_a)     # DEBUG
-    #print(F_a.shape)        # DEBUG
+    #print(F_a)     # DEBUG: FFT後の数値
+    #print(F_a.shape)        # DEBUG: FFT後の配列サイズ
 
 # BUG: wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生じcsvとして保存できない
-np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')
+#np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')

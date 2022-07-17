@@ -29,12 +29,11 @@ def main():
         print(row[6])
 
         if pd.isnull(row[9]):
-            # split_wav(row, un_labeled_dir)
+            split_wav(row, un_labeled_dir)
             print("UN LABELED")
         else:
             split_wav(row, labeled_dir)
             print("LABELED")
-            
             
 
 if __name__ == "__main__":
