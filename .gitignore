@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 OGVC
 train_data
 .vscode
@@ -10,3 +11,11 @@ data
 vector
 evaluate_japanese_w2v
 vectorization/fft_dbg.txt
+=======
+data
+OGVC
+evalate_japanese_w2v
+vector
+.vscode
+test/doc
+>>>>>>> dev
