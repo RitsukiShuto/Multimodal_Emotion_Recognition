@@ -2,11 +2,16 @@
 # bag-of-words
 #
 import csv
+from operator import index
 import re
+import pandas as pd
 
 import MeCab as mecab
 from gensim.corpora import Dictionary
 from gensim import matutils as mtu
+
+dct = Dictionary()          # 辞書作成
+bow_list = []
 
 def read_csv():
     # csvを読み込む
@@ -16,9 +21,9 @@ def read_csv():
 
     return docs
 
+
 # 辞書を作る
 words_all = read_csv()      # csv読み込み
-dct = Dictionary()          # 辞書作成
 
 for sentence in words_all:
     line = str(sentence)
@@ -40,13 +45,11 @@ for sentence in words_all:
     bow_format = dct.doc2bow(line.split())
     bow_set.append(bow_format)
 
-    print(line)
-    print("BoW format: (word ID, word frequency)")
-    print(bow_format)
-
     bow = mtu.corpus2dense([bow_format], num_terms=len(dct)).T[0]
-    print("BoW")
-    print(bow)
-
     bow.tolist()        # numpyからlistに変える
-    print(list(map(int, bow.tolist())))
+    list(map(int, bow.tolist()))
+
+    bow_list.append(bow)
+
+bow_df = pd.DataFrame(bow_list)
+bow_df.to_csv("../vector/bag-of-words/bow.csv", index=False)
