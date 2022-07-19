@@ -41,10 +41,7 @@ def main():
         print(sentence)
 
         if pd.isnull(row[6]):      # ラベルなし
-            if row[5] == "{*}":    # 語素はスキップ
-                print("[skip]", row[5])
-
-            else:
+            if row[5] != "{*}":    # '声喩'のみの発話はスキップ
                 print("[run wakatigaki()] UN LABELED\n")
                 wakati = wakatigaki(sentence)
                 un_labeled_wakati.append(wakati)
