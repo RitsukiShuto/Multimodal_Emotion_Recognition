@@ -8,8 +8,10 @@ import MeCab as mecab
 from gensim.corpora import Dictionary
 from gensim import matutils as mtu
 
-full_wakati = []
-half_wakati = []
+full_labeled_wakati = []
+half_labeled_wakati = []
+un_labeled_wakati = []
+
 m = mecab.Tagger("-d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd/ -Owakati")       # NEologd
 #m = mecab.Tagger('-Owakati')        # ipadic
 
@@ -26,7 +28,7 @@ def wakatigaki(sentence):
     return wakati
 
 def main():
-    cnt_skip = 0        # init var
+    cnt_un_labeled = 0        # init var
     cnt_half_labeled = 0
     cnt_full_labeled = 0
 
@@ -36,33 +38,43 @@ def main():
     # 分かち書きを行う発話を選定し、必要な処理を行う
     for row in df.values:
         sentence = str(row[5])
+        print(sentence)
 
-        if pd.isnull(row[6]):      # ラベルなしはスキップ
-            print("[skip] UN LABELED")
-            cnt_skip += 1
+        if pd.isnull(row[6]):      # ラベルなし
+            if row[5] == "{*}":    # 語素はスキップ
+                print("[skip]", row[5])
+
+            else:
+                print("[run wakatigaki()] UN LABELED\n")
+                wakati = wakatigaki(sentence)
+                un_labeled_wakati.append(wakati)
+                cnt_un_labeled += 1
 
         elif pd.isnull(row[9]):    # 'ans_n'のみラベルあり
-            print("[run wakatigaki()] HALF LABELED")
+            print("[run wakatigaki()] HALF LABELED\n")
             wakati = wakatigaki(sentence)
-            half_wakati.append(wakati)
+            half_labeled_wakati.append(wakati)
             cnt_half_labeled += 1
 
         else:                      # 'emotion'ラベルあり
-            print("[run wakatigaki()] FULL LABELED")
+            print("[run wakatigaki()] FULL LABELED\n")
             wakati = wakatigaki(sentence)
-            full_wakati.append(wakati)
+            full_labeled_wakati.append(wakati)
             cnt_full_labeled += 1
 
     # CSVを保存
-    df_half_wakati = pd.DataFrame(half_wakati)
+    df_un_wakati = pd.DataFrame(un_labeled_wakati)
+    df_un_wakati.to_csv("../data/wakachigaki/un_labeled_wakati.txt", index=False)
+
+    df_half_wakati = pd.DataFrame(half_labeled_wakati)
     df_half_wakati.to_csv("../data/wakachigaki/half_wakati.txt", index=False)
 
-    df_full_wakati = pd.DataFrame(full_wakati)
+    df_full_wakati = pd.DataFrame(full_labeled_wakati)
     df_full_wakati.to_csv("../data/wakachigaki/full_wakati.txt", index=False)
 
     # DEBUG
-    print("data=", cnt_skip + cnt_half_labeled + cnt_full_labeled)
-    print("skip=", cnt_skip)
+    print("data=", cnt_un_labeled + cnt_half_labeled + cnt_full_labeled)
+    print("un labeled=", cnt_un_labeled)
     print("half labeled=", cnt_half_labeled)
     print("full labeled=", cnt_full_labeled)
 

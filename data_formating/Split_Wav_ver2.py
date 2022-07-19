@@ -9,9 +9,11 @@ import pandas as pd
 
 wav_dir = "../OGVC/OGVC_Vol1/Natural/wav/"
 csv_dir = "../data/supervised_list.csv"
-labeled_dir = "../data/wav/labeled/"
+full_labeled_dir = "../data/wav/full_labeled/"
+half_labeled_dir = "../data/wav/half_labeled/"
 un_labeled_dir = "../data/wav/un_labeled/"
 
+# wavファイルの分割
 def split_wav(row, path):
     wav_data = AudioSegment.from_file(wav_dir + str(row[0]) + ".wav")
 
@@ -23,17 +25,30 @@ def split_wav(row, path):
 
 
 def main():
+    cnt_unlabeled = 0        # init var
+    cnt_half_labeled = 0
+    cnt_full_labeled = 0
+
     csv_file = pd.read_csv(csv_dir, encoding='UTF-8', header=0)
 
     for row in csv_file.values:
         print(row[6])
 
-        if pd.isnull(row[9]):
-            split_wav(row, un_labeled_dir)
-            print("UN LABELED")
-        else:
-            split_wav(row, labeled_dir)
-            print("LABELED")
+        if pd.isnull(row[6]):      # ラベルなしはスキップ
+            if row[5] != "{*}":    # 語素はスキップ
+                print("[run split_wav()] UN LABELED\n")
+                split_wav(row, un_labeled_dir)
+                cnt_unlabeled += 1
+
+        elif pd.isnull(row[9]):    # 'ans_n'のみラベルあり
+            print("[run split_wav()] HALF LABELED\n")
+            split_wav(row, half_labeled_dir)
+            cnt_half_labeled += 1
+
+        else:                      # 'emotion'ラベルあり
+            print("[run split_wav()] FULL LABELED\n")
+            split_wav(row, full_labeled_dir)
+            cnt_full_labeled += 1
             
 
 if __name__ == "__main__":
