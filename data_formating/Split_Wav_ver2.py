@@ -7,8 +7,11 @@ from pydub import AudioSegment
 import csv
 import pandas as pd
 
+# data dir
 wav_dir = "../OGVC/OGVC_Vol1/Natural/wav/"
 csv_dir = "../data/supervised_list.csv"
+
+# save dir
 full_labeled_dir = "../data/wav/full_labeled/"
 half_labeled_dir = "../data/wav/half_labeled/"
 un_labeled_dir = "../data/wav/un_labeled/"
@@ -35,7 +38,7 @@ def main():
         print(row[6])
 
         if pd.isnull(row[6]):      # ラベルなしはスキップ
-            if row[5] != "{*}":    # 語素はスキップ
+            if row[5] != "{*}":    # '声喩'のみの発話はスキップ
                 print("[run split_wav()] UN LABELED\n")
                 split_wav(row, un_labeled_dir)
                 cnt_unlabeled += 1
