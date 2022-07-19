@@ -38,7 +38,7 @@ def fft_load(wav_file, size, start, end):
     wave = wave_load(wav_file)
     windowedData = hammingWindow * wave[st:st+size]  # 切り出した波形データ（窓関数あり）
     data = np.fft.fft(windowedData)
-    data = data / max(abs(data)) # 0~1正規化
+    data = abs(data) ** 2
 
     return data
 
