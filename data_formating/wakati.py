@@ -30,7 +30,8 @@ def main():
     cnt_half_labeled = 0
     cnt_full_labeled = 0
 
-    df = pd.read_csv('../data/supervised_list.csv', encoding='utf-8', header=0)       # csvを読み込む
+    # csvを読み込む
+    df = pd.read_csv('../data/supervised_list.csv', encoding='utf-8', header=0)
 
     # 分かち書きを行う発話を選定し、必要な処理を行う
     for row in df.values:
@@ -40,24 +41,26 @@ def main():
             print("[skip] UN LABELED")
             cnt_skip += 1
 
-        elif pd.isnull(row[9]):
+        elif pd.isnull(row[9]):    # 'ans_n'のみラベルあり
             print("[run wakatigaki()] HALF LABELED")
             wakati = wakatigaki(sentence)
             half_wakati.append(wakati)
             cnt_half_labeled += 1
 
-        else:
+        else:                      # 'emotion'ラベルあり
             print("[run wakatigaki()] FULL LABELED")
             wakati = wakatigaki(sentence)
             full_wakati.append(wakati)
             cnt_full_labeled += 1
 
+    # CSVを保存
     df_half_wakati = pd.DataFrame(half_wakati)
     df_half_wakati.to_csv("../data/wakachigaki/half_wakati.txt", index=False)
 
     df_full_wakati = pd.DataFrame(full_wakati)
     df_full_wakati.to_csv("../data/wakachigaki/full_wakati.txt", index=False)
 
+    # DEBUG
     print("data=", cnt_skip + cnt_half_labeled + cnt_full_labeled)
     print("skip=", cnt_skip)
     print("half labeled=", cnt_half_labeled)
