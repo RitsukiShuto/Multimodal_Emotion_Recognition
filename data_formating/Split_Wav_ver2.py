@@ -16,11 +16,7 @@ full_labeled_dir = "../data/wav/full_labeled/"
 half_labeled_dir = "../data/wav/half_labeled/"
 un_labeled_dir = "../data/wav/un_labeled/"
 
-<<<<<<< HEAD
 # wavファイルの分割
-=======
-# wavの分割を行う関数
->>>>>>> 66993f7f6902aaaaf80f2fee1251de61db1c2ae5
 def split_wav(row, path):
     wav_data = AudioSegment.from_file(wav_dir + str(row[0]) + ".wav")
 
@@ -41,7 +37,6 @@ def main():
     for row in csv_file.values:
         print(row[6])       # DEBUG
 
-<<<<<<< HEAD
         if pd.isnull(row[6]):      # ラベルなしはスキップ
             if row[5] != "{*}":    # '声喩'のみの発話はスキップ
                 print("[run split_wav()] UN LABELED\n")
@@ -57,15 +52,6 @@ def main():
             print("[run split_wav()] FULL LABELED\n")
             split_wav(row, full_labeled_dir)
             cnt_full_labeled += 1
-=======
-        # 感情ラベルの有無を判断
-        if pd.isnull(row[9]):       # row[9]は多数決ラベル
-            split_wav(row, un_labeled_dir)
-            print("UN LABELED")
-        else:
-            split_wav(row, labeled_dir)
-            print("LABELED")
->>>>>>> 66993f7f6902aaaaf80f2fee1251de61db1c2ae5
             
 
 if __name__ == "__main__":
