@@ -18,4 +18,9 @@ evalate_japanese_w2v
 vector
 .vscode
 test/doc
+<<<<<<< HEAD
+>>>>>>> dev
+=======
+*_dbg.*
+test/pow.png
 >>>>>>> dev

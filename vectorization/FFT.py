@@ -5,28 +5,48 @@ import glob
 import pandas as pd
 import wave
 import numpy as np
+import random
 
-wav_list = glob.glob("../data/wav/labeled/*.wav")
-
+wav_dir = glob.glob("../data/wav/labeled/*.wav")
 fft_list = []
-for wav_file in wav_list:
-    #print(wav_file)        # DEBUG
 
-    w = wave.open(wav_file, 'rb')
-    data = w.readframes(w.getnframes())
-    w.close()
+# wavファイルをロード
+def wave_load(filename):
+    # open wave file
+    wf = wave.open(filename,'r')
+    channels = wf.getnchannels()
 
-    fs = w.getframerate()
-    s = (np.frombuffer(data, dtype="int16") / 32767.0)[0:fs]
+    # load wave data
+    chunk_size = wf.getnframes()
+    amp  = (2**8) ** wf.getsampwidth() / 2
+    data = wf.readframes(chunk_size)   # バイナリ読み込み
+    data = np.frombuffer(data,'int16') # intに変換
+    data = data / amp                  # 振幅正規化
+    data = data[::channels]
+   
+    return data
 
-    F = np.fft.fft(s)
-    F_abs = np.abs(F)
-    F_a = F_abs / fs * 2
-    F_a[0] = F_abs[0] / fs
+# FFT
+def fft_load(wav_file, size, start, end):
+    st = 1000   # サンプリングする開始位置
+    hammingWindow = np.hamming(size)    # ハミング窓
+    fs = 44100 #サンプリングレート
+    d = 1.0 / fs #サンプリングレートの逆数
+    freqList = np.fft.fftfreq(size, d)
+    
+    n = random.randint(start,end)
+    wave = wave_load(wav_file)
+    windowedData = hammingWindow * wave[st:st+size]  # 切り出した波形データ（窓関数あり）
+    data = np.fft.fft(windowedData)
+    data = abs(data) ** 2
 
-    fft_list.append(F_a)
-    #print(F_a)     # DEBUG
-    print(F_a.shape)        # DEBUG
+    return data
 
-# BUG:wavファイルごとに長さが異なるため、FFTした際の配列サイズに差異が生じcsvとして保存できない
-# np.savetxt("../vector/FFT/fft.csv", fft_list, fmt='%12.8f', delimiter=',')
+for wav_file in wav_dir:
+    wave_load(wav_file)
+
+    #print(wav_file)
+    fft_data = fft_load(wav_file, 256, 0, 1000)
+    fft_list.append(fft_data)
+
+np.savetxt("../vector/FFT/FFT.csv", fft_list, fmt='%12f', delimiter=',')
