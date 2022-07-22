@@ -3,6 +3,7 @@
 #
 from numpy import vectorize
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
 
 import glob
 import csv
@@ -22,15 +23,25 @@ def TF_IDF(docs):
     print('Vocabulary size: {}'.format(len(vec_tfidf.vocabulary_)))
     #print('Vocabulary content: {}'.format(vec_tfidf.vocabulary_))
 
-    df = pd.DataFrame(X.toarray(), columns=vec_tfidf.get_feature_names())
+    print(X.shape)
 
-    return df
+    return X, vec_tfidf
 
+
+def _PCA(X):
+    pca = PCA(n_components=0.9, whiten=False)
+    pca.fit(X.toarray())
+
+    print(pca.n_components_)
+
+    x = pca.transform(X.toarray())
+    print(x.shape)
 
 def main():
     doc_list = glob.glob("../data/wakachi/*.txt")
     for docs in doc_list:
-        df = TF_IDF(docs)
+        X, vec_tfidf = TF_IDF(docs)
+        df = pd.DataFrame(X.toarray(), columns=vec_tfidf.get_feature_names())
 
         # csvを保存
         if docs == "../data/wakachi/full_wakati.txt":       # 'emotion'ラベル付き
@@ -42,6 +53,7 @@ def main():
         else:                                               # ラベルなし
             df.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False)
 
+        _PCA(X)
 
 if __name__ == '__main__':
     main()
