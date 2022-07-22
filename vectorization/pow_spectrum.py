@@ -74,7 +74,6 @@ def main():
                 half_labeled_pow.append(pow)
             
             else:                                       # ラベルなし
-                # <<--------------------------------------------------------------- TODO: 声喩のみの発話をスキップする記述を追加する。
                 print("[UN LABELED]", wav)
                 pow = pow_spectrum(wav, 128)
                 un_labeled_pow.append(pow)
