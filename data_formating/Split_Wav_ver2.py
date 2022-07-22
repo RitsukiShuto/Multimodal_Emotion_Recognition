@@ -1,5 +1,5 @@
 # Created by RitsukiShuto on 2022/06/28.
-# 発話ごとにwavファイルを分割する。その際、{笑}のみの音声は除外する。
+# 発話ごとにwavファイルを分割する。その際、{笑}のみの音声はスキップする。
 #
 from cmath import nan
 from pydub import AudioSegment
@@ -42,6 +42,8 @@ def main():
                 print("[run split_wav()] UN LABELED\n")
                 split_wav(row, un_labeled_dir)
                 cnt_unlabeled += 1
+            else: 
+                print("[skip]")
 
         elif pd.isnull(row[9]):    # 'ans_n'のみラベルあり
             print("[run split_wav()] HALF LABELED\n")
