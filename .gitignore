@@ -6,3 +6,5 @@ dbg
 evaluate_japanese_w2v
 .vscode/*.json
 test/doc/jwsan-2145.csv
+semi_cca_cpy.py
+semi_cca.py
