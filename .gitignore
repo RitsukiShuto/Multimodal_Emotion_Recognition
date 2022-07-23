@@ -2,7 +2,7 @@ OGVC
 train_data
 data
 vector
-dbg
+dbg_documents
 evaluate_japanese_w2v
 .vscode/*.json
 test/doc/jwsan-2145.csv
