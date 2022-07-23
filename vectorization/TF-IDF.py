@@ -25,7 +25,7 @@ def TF_IDF(docs):
 
     print(X.shape)
 
-    return X, vec_tfidf
+    return X
 
 
 def _PCA(X):
@@ -35,25 +35,39 @@ def _PCA(X):
     print(pca.n_components_)
 
     x = pca.transform(X.toarray())
-    print(x.shape)
+
+    return x
+
 
 def main():
     doc_list = glob.glob("../data/wakachi/*.txt")
     for docs in doc_list:
-        X, vec_tfidf = TF_IDF(docs)
-        df = pd.DataFrame(X.toarray(), columns=vec_tfidf.get_feature_names())
+        X = TF_IDF(docs)
+        df = pd.DataFrame(X.toarray())
 
         # csvを保存
         if docs == "../data/wakachi/full_wakati.txt":       # 'emotion'ラベル付き
-            df.to_csv("../vector/bag-of-words/full_labeled_TF-IDF.csv", index=False)
+            df.to_csv("../vector/bag-of-words/full_labeled_TF-IDF.csv", index=False, header=0)
 
         elif docs == "../data/wakachi/half_wakati.txt":     # 'ans_n'ラベル付き
-            df.to_csv("../vector/bag-of-words/half_labeled_TF-IDF.csv", index=False)
+            df.to_csv("../vector/bag-of-words/half_labeled_TF-IDF.csv", index=False, header=0)
 
         else:                                               # ラベルなし
-            df.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False)
+            df.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False, header=0)
 
-        _PCA(X)
+
+        x = _PCA(X)
+        df = pd.DataFrame(x)
+
+        # csvを保存
+        if docs == "../data/wakachi/full_wakati.txt":       # 'emotion'ラベル付き
+            df.to_csv("../vector/bag-of-words/PCA_full_labeled_TF-IDF.csv", index=False, header=0)
+
+        elif docs == "../data/wakachi/half_wakati.txt":     # 'ans_n'ラベル付き
+            df.to_csv("../vector/bag-of-words/PCA_half_labeled_TF-IDF.csv", index=False, header=0)
+
+        else:                                               # ラベルなし
+            df.to_csv("../vector/bag-of-words/PCA_un_labeled_TF-IDF.csv", index=False, header=0)
 
 if __name__ == '__main__':
     main()
