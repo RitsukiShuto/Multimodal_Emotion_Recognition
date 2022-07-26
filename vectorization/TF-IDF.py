@@ -44,25 +44,24 @@ def main():
 
     for docs in doc_list:
         X = TF_IDF(docs)
-        df = pd.DataFrame(X.toarray())
+        x = _PCA(x)
+
+        df1 = pd.DataFrame(X.toarray())
+        df1 = df1.columns=list(range(len(df1.columns)))
+
+        df2 = pd.DataFrame(x)
+        df2 = df2.columns=list(range(len(df2.columns)))
+
 
         # csvを保存
         if docs == "../data/wakachi/2div/labeled_wakati.txt":       # 'emotion'ラベル付き
-            df.to_csv("../vector/bag-of-words/labeled_TF-IDF.csv", index=False, header=0)
+            df1.to_csv("../vector/bag-of-words/labeled_TF-IDF.csv", index=False, header=0)
+            df2.to_csv("../train_data/2div/TF-IDF_labeled_PCA.csv", index=False, header=0)
 
         else:                                               # ラベルなし
-            df.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False, header=0)
-
-
-        x = _PCA(X)
-        df = pd.DataFrame(x)
-
-        # csvを保存
-        if docs == "../data/wakachi/2div/labeled_wakati.txt":       # 'emotion'ラベル付き
-            df.to_csv("../train_data/2div/TF-IDF_labeled_PCA.csv", index=False, header=0)
-
-        else:                                               # ラベルなし
-            df.to_csv("../train_data/2div/TF-IDF_un_labeled_PCA.csv", index=False, header=0)
+            df1.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False, header=0)
+            df2.to_csv("../train_data/2div/TF-IDF_un_labeled_PCA.csv", index=False, header=0)                                          # ラベルなし
+            
 
 if __name__ == '__main__':
     main()
