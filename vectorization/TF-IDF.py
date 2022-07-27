@@ -29,7 +29,7 @@ def TF_IDF(docs):
 
 
 def _PCA(X):
-    pca = PCA(n_components=0.9, whiten=False)
+    pca = PCA(n_components=0.7, whiten=False)
     pca.fit(X.toarray())
 
     print(pca.n_components_)
@@ -44,13 +44,13 @@ def main():
 
     for docs in doc_list:
         X = TF_IDF(docs)
-        x = _PCA(x)
+        x = _PCA(X)
 
         df1 = pd.DataFrame(X.toarray())
-        df1 = df1.columns=list(range(len(df1.columns)))
+        #df1 = df1.columns=list(range(len(df1.columns)))
 
         df2 = pd.DataFrame(x)
-        df2 = df2.columns=list(range(len(df2.columns)))
+        #df2 = df2.columns=list(range(len(df2.columns)))
 
 
         # csvを保存
