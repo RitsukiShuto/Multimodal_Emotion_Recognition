@@ -8,6 +8,8 @@ from sklearn.decomposition import PCA
 import glob
 import csv
 import pandas as pd
+import numpy as np
+
 
 def TF_IDF(docs):
     # csvを読み込む
@@ -20,10 +22,10 @@ def TF_IDF(docs):
     X = vec_tfidf.fit_transform(text)
 
     # DEBUG
-    print('Vocabulary size: {}'.format(len(vec_tfidf.vocabulary_)))
+    #print('Vocabulary size: {}'.format(len(vec_tfidf.vocabulary_)))
     #print('Vocabulary content: {}'.format(vec_tfidf.vocabulary_))
 
-    print(X.shape)
+    print("(発話数, 単語数)={}".format(X.shape))
 
     return X
 
@@ -32,36 +34,61 @@ def _PCA(X):
     pca = PCA(n_components=0.7, whiten=False)
     pca.fit(X.toarray())
 
-    print(pca.n_components_)
+    print("次元削減後の次元数={}".format(pca.n_components_))
 
     x = pca.transform(X.toarray())
 
     return x
 
 
+def split_data(x):
+    TF_IDF_labeled = []
+    TF_IDF_un_labeled = []
+
+    cnt_labeled_data = 0
+    cnt_un_labeled_data = 0
+
+    meta_data = pd.read_csv("../data/supervised_list.csv", header=0)
+
+    i = 0
+    for row in meta_data.values:
+        #print(row[9], speech[0:4], i, "/8365")
+        if row[5] != "{笑}":
+
+            if pd.isnull(row[9]):
+                print("[UN LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
+                np.append(x[i][0:6], TF_IDF_un_labeled, axis=0)       # BUG: データが追加されない
+                cnt_un_labeled_data += 1
+
+            else:
+                print("[LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
+                np.append(x[i][0:6], TF_IDF_labeled, axis=0)          # BUG: データが追加されない
+                cnt_labeled_data += 1
+
+            i += 1
+
+    print(TF_IDF_labeled)
+
+    df1 = pd.DataFrame(TF_IDF_labeled)
+    df2 = pd.DataFrame(TF_IDF_un_labeled)
+    
+    df1.to_csv("../train_data/2div/TF-IDF_labeled_PCA.csv", index=True, header=1)
+    df2.to_csv("../train_data/2div/TF-IDF_un_labeled_PCA.csv", index=True, header=1)
+
+    print("data = {}".format(cnt_un_labeled_data + cnt_labeled_data))
+    print("labeled_data = {}".format(cnt_labeled_data))
+    print("un labeled data = {}".format(cnt_un_labeled_data))
+
+
 def main():
-    doc_list = glob.glob("../data/wakachi/2div/*.txt")
+    docs = "../data/wakachi/2div/wakati.txt"
 
-    for docs in doc_list:
-        X = TF_IDF(docs)
-        x = _PCA(X)
+    X = TF_IDF(docs)
+    x = _PCA(X)
 
-        df1 = pd.DataFrame(X.toarray())
-        #df1 = df1.columns=list(range(len(df1.columns)))
-
-        df2 = pd.DataFrame(x)
-        #df2 = df2.columns=list(range(len(df2.columns)))
-
-
-        # csvを保存
-        if docs == "../data/wakachi/2div/labeled_wakati.txt":       # 'emotion'ラベル付き
-            df1.to_csv("../vector/bag-of-words/labeled_TF-IDF.csv", index=False, header=0)
-            df2.to_csv("../train_data/2div/TF-IDF_labeled_PCA.csv", index=False, header=0)
-
-        else:                                               # ラベルなし
-            df1.to_csv("../vector/bag-of-words/un_labeled_TF-IDF.csv", index=False, header=0)
-            df2.to_csv("../train_data/2div/TF-IDF_un_labeled_PCA.csv", index=False, header=0)                                          # ラベルなし
-            
+    df1 = pd.DataFrame(x)
+    split_data(x)
+    
 
 if __name__ == '__main__':
     main()
