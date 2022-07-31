@@ -57,17 +57,15 @@ def split_data(x):
 
             if pd.isnull(row[9]):
                 print("[UN LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
-                np.append(x[i][0:6], TF_IDF_un_labeled, axis=0)       # BUG: データが追加されない
+                TF_IDF_un_labeled.append(x[i][0:])
                 cnt_un_labeled_data += 1
 
             else:
                 print("[LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
-                np.append(x[i][0:6], TF_IDF_labeled, axis=0)          # BUG: データが追加されない
+                TF_IDF_labeled.append(x[i][0:])
                 cnt_labeled_data += 1
 
             i += 1
-
-    print(TF_IDF_labeled)
 
     df1 = pd.DataFrame(TF_IDF_labeled)
     df2 = pd.DataFrame(TF_IDF_un_labeled)
