@@ -30,9 +30,9 @@ def load_wav(filename):
 # FFTを行いパワースペクトルを計算する
 # main()から呼び出される
 def pow_spectrum(wav_file, size):
-    st = 1000               # サンプリングする開始位置
-    fs = 44100              #サンプリングレート
-    d = 1.0 / fs            #サンプリングレートの逆数
+    st = 1000                       # サンプリングする開始位置
+    fs = 44100                      # サンプリングレート
+    d = 1.0 / fs                    # サンプリングレートの逆数
 
     hammingWindow = np.hamming(size)                    # ハミング窓
     freqList = np.fft.fftfreq(size, d)
@@ -42,12 +42,14 @@ def pow_spectrum(wav_file, size):
     data = abs(data) ** 2
 
     return data
-    
+
 
 def main():
+    np.set_printoptions(precision=8, suppress=True)
+
     # 出力先
-    labeled_dir = "../train_data/2div/labeled_pow.csv"
-    un_labeled_dir = "../train_data/2div/un_labeled_pow.csv"
+    labeled_dir = "../train_data/2div/POW_labeled.csv"
+    un_labeled_dir = "../train_data/2div/POW_un_labeled.csv"
 
     # パワースペクトル格納用変数
     labeled_pow = []
@@ -72,8 +74,15 @@ def main():
                 un_labeled_pow.append(pow)
 
     # CSVで保存
-    np.savetxt(labeled_dir, labeled_pow, fmt='%8f', delimiter=',')
-    np.savetxt(un_labeled_dir, un_labeled_pow, fmt='%8f', delimiter=',')
+    #np.savetxt(labeled_dir, labeled_pow, fmt='%8f', delimiter=',')
+    #np.savetxt(un_labeled_dir, un_labeled_pow, fmt='%8f', delimiter=',')
+
+    df1 = pd.DataFrame(labeled_pow)
+    df2 = pd.DataFrame(un_labeled_pow)
+
+    df1.to_csv(labeled_dir, index=True, header=1)
+    df2.to_csv(un_labeled_dir, index=True, header=1)
+
 
 if __name__ == '__main__':
     main()
