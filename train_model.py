@@ -9,10 +9,10 @@ import random
 from sklearn.preprocessing import LabelEncoder
 
 # モデル訓練用関数
-#def train_SetData_only():      # セットになったデータのみ訓練
+#def train_SetData_only():      # セットになったデータのみ学習
 
 
-#def train_all_data():          # すべてのデータで訓練
+#def train_all_data():          # すべてのデータで学習
 
 
 # モデル評価用関数
