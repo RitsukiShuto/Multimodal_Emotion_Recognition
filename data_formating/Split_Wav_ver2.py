@@ -34,7 +34,7 @@ def main():
 
     csv_file = pd.read_csv(csv_dir, encoding='UTF-8', header=0)
 
-    for row in csv_file.values:
+    for row in csv_file.values:     # メタデータを1行ずつ取得
         print(row[6])       # DEBUG
 
         if pd.isnull(row[6]):      # ラベルなしはスキップ
