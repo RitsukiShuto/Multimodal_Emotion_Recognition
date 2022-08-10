@@ -45,7 +45,17 @@ def main():
     # ラベルを読み込み
     # ラベルを数値に変換
     # ['ACC', 'ANG', 'ANT', 'DIS', 'FEA', 'JOY', 'SAD', 'SUR', 'NEU', 'OTH'] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    label = 0
+    label_list = []
+    label_dic = {'NEU': '0', 'OTH': '1', 'ACC': '2', 'ANG': '3', 'ANT': '4', 'DIS': '5', 'FEA': '6', 'JOY': '7', 'SAD': '8', 'SUR': '9'}
+
+    for row in meta_data.values:
+        emo = str(row[9])
+        print(emo)
+
+        if emo in label_dic:
+            label = label_dic[emo]
+            label_list.append(label)
+            print(emo, "is", label)
 
     # 教師ありデータの読み込み
     sound_labeled_X1 = pd.read_csv("train_data/2div/POW_labeled.csv", header=0, index_col=0)
@@ -57,11 +67,11 @@ def main():
     print("[0]train_SetData_only\n[1]train_all_data\n[2]eval_SetData_only\n[3]eval_all_data\n")
     mode = input("imput the number:")
 
+    # 実行する関数によって分岐
     if mode == '0':         # 教師ありデータのみで学習
         # 教師ありデータを表示
         print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
         print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
-
         train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label)
 
     elif mode == '1':       # すべてのデータで学習
