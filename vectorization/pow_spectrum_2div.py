@@ -10,6 +10,8 @@ import pandas as pd
 import glob
 import os
 
+from natsort import natsorted
+
 # wavファイルを読み込む
 # pow_spectrum()から呼び出される
 def load_wav(filename):
@@ -55,11 +57,15 @@ def main():
     labeled_pow = []
     un_labeled_pow = []
 
+    cnt_full_labeled = 0
+    cnt_un_labeled = 0
+
     # wavファイルのあるディレクトリ一覧を取得
     dir_list = glob.glob("../data/wav/*")
 
     for dir in dir_list:                        # wavファイルのあるディレクトリを1つずつ走査
-        wav_list = glob.glob(dir + "/*.wav")    # wavファイルの一覧を取得
+        old_wav_list = glob.glob(dir + "/*.wav")    # wavファイルの一覧を取得
+        wav_list = natsorted(old_wav_list)
 
         for wav in wav_list:                    # wavファイルを1つずつ走査
             # ラベルの付与状態ごとに出力先を分ける
@@ -67,11 +73,13 @@ def main():
                 print("[FULL LABELED]" ,wav)
                 pow = pow_spectrum(wav, 128)
                 labeled_pow.append(pow)
+                cnt_full_labeled += 1
 
             else:                                       # ラベルなし
                 print("[UN LABELED]", wav)
                 pow = pow_spectrum(wav, 128)
                 un_labeled_pow.append(pow)
+                cnt_un_labeled += 1
 
     # CSVで保存
     #np.savetxt(labeled_dir, labeled_pow, fmt='%8f', delimiter=',')
@@ -83,6 +91,8 @@ def main():
     df1.to_csv(labeled_dir, index=True, header=1)
     df2.to_csv(un_labeled_dir, index=True, header=1)
 
+    print("FULL LABELED:", cnt_full_labeled)
+    print("UN LABELED:", cnt_un_labeled)
 
 if __name__ == '__main__':
     main()
