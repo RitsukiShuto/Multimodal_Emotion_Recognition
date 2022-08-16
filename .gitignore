@@ -8,3 +8,6 @@ evaluate_japanese_w2v
 test/doc/jwsan-2145.csv
 semi_cca_cpy.py
 semi_cca.py
+model_loss.png
+history.csv
+train_log
