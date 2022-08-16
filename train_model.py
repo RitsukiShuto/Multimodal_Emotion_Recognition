@@ -112,21 +112,18 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
 
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                             loss=categorical_crossentropy,
-                             metrics=['accuracy'])
+                             loss=categorical_crossentropy, metrics=['accuracy'])
 
     x1_single_model.compile(optimizer=Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                            loss=categorical_crossentropy,
-                            metrics=['accuracy'])
+                            loss=categorical_crossentropy, metrics=['accuracy'])
 
     x2_single_model.compile(optimizer=Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                            loss=categorical_crossentropy,
-                            metrics=['accuracy'])
+                            loss=categorical_crossentropy, metrics=['accuracy'])
     
     # ----------------------------------------------------------------------------------------
     # モデルの学習
-    epochs = 200       # 学習用パラメータ
-    batch_size = 8
+    epochs = 200        # 学習用パラメータ
+    batch_size = 8      #
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           validation_data=([X1_val, X2_val], y_val),
