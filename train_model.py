@@ -25,54 +25,43 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 import matplotlib.pyplot as plt
 
-]
-
 import datetime
 import os
 
-# モデル訓練用関数
-def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セットになったデータのみ学習
-    print("train_SetData_only")
-
-    X1 = sound_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
-    X2 = tfidf_labeled_X2.to_numpy()
-    y = label.to_numpy()
-
-    print("modality1:", X1.shape)           # DEBUG
-    print("modality2:", X2.shape)
-    print("label:", y.shape)
-
-    # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
-    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
-
-    print("X1_train.shape>", X1_train.shape)
-    print("X2_train.shape>", X2_train.shape)
-    print("y_train.shape>", y_train.shape)
-
-    # モデルを定義
-    # 各種パラメータ
-    length = len(X1_train)
-    X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
-    X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
-
-    print("X1 dim:", X1_dim)        # DEBUG
-    print("X2 dim:", X2_dim)
-    print("length:", length)
-
-    # 各モダリティの特徴量抽出層
-    input_X1 = Input(batch_shape=(length, X1_dim), name='input_X1')     # モダリティ1
+# セクションごとにニューラルネットワークを定義
+# 教師あり・半教師あり学習両用
+def X1_feature_quantity_extracting_layer(length, X1_dim):
+    # モダリティ1の特徴量抽出層
+    input_X1 = Input(batch_shape=(length, X1_dim), name='input_X1')
     h11 = Dense(units=64, activation='relu')(input_X1)
     h12 = Dense(units=32, activation='relu')(h11)
     z1 = Dense(units=4, activation='relu')(h12)
 
-    input_X2 = Input(batch_shape=(length, X2_dim), name='input_X2')     # モダリティ2
+    # 単一モダリティでの分類用のネットワーク
+    c_x1 = Dropout(0.5)(z1)
+    z12 = Dense(units=8, activation='softmax')(c_x1)
+    x1_single_model = Model(input_X1, z12)
+
+    return input_X1, z1, x1_single_model
+
+def X2_feature_quantity_extracting_layer(length, X2_dim):
+    # モダリティ2の特徴量抽出層
+    input_X2 = Input(batch_shape=(length, X2_dim), name='input_X2')
     h21 = Dense(units=276, activation='relu')(input_X2)
     h22 = Dense(units=69, activation='relu')(h21)
     h23 = Dense(units=34, activation='relu')(h22)
     z2 = Dense(units=4, activation='relu')(h23)
 
-    concat = Concatenate()([z1, z2])       # 特徴量合成
+    # 単一モダリティでの分類用のネットワーク
+    c_x2 = Dropout(0.5)(z2)
+    z22 = Dense(units=8, activation='softmax')(c_x2)
+    x2_single_model = Model(input_X2, z22)
+
+    return input_X2, z2, x2_single_model
+
+def classification_layer(input_X1, input_X2, z1, z2):
+    # 特徴量を合成
+    concat =  Concatenate()([z1, z2])
 
     # 分類層
     c1 = Dense(units=8, activation='relu', name='classification_1')(concat)
@@ -81,17 +70,45 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
 
     # 出力層
     classification = Dropout(0.5)(c2)
-    output = Dense(units=8, activation='softmax', name='classfication_layer')(classification)       # マルチモーダル
-
-    c_x1 = Dropout(0.5)(z1)
-    z12 = Dense(units=8, activation='softmax')(c_x1)      # 単一モダリティ検証用 X1
-
-    c_x2 = Dropout(0.5)(z2)
-    z22 = Dense(units=8, activation='softmax')(c_x2)      # 単一モダリティ検証用 X2
+    output = Dense(units=8, activation='softmax', name='classfication_layer')(classification)
 
     multimodal_model = Model([input_X1, input_X2], output)
-    x1_single_model = Model(input_X1, z12)
-    x2_single_model = Model(input_X2, z22)
+
+    return multimodal_model
+
+# 教師あり学習
+def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セットになったデータのみ学習
+    print("train_SetData_only")
+
+    # TODO: dataframeを最初からNumpyArrayで読み込むように変更
+    X1 = sound_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
+    X2 = tfidf_labeled_X2.to_numpy()
+    y = label.to_numpy()
+
+    # データを分割
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.15, random_state=0)
+    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.15, random_state=0)
+
+    # モデルを定義
+    # 各種パラメータ
+    length = len(X1_train)          # 学習データの数
+    X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
+    X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
+
+    # TODO: 出力するものを吟味したほうがいい
+    print("X1_train.shape:", X1_train.shape)
+    print("X2_train.shape:", X2_train.shape)
+    print("y_train.shape:", y_train.shape)
+    print("X1 dim:", X1_dim)
+    print("X2 dim:", X2_dim)
+    print("length:", length)
+
+    # 特徴量抽出層
+    input_X1, z1, x1_single_model = X1_feature_quantity_extracting_layer(length, X1_dim)
+    input_X2, z2, x2_single_model = X2_feature_quantity_extracting_layer(length, X2_dim)
+
+    # 分類層
+    multimodal_model = classification_layer(input_X1, input_X2, z1, z2)
 
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08),
@@ -103,12 +120,13 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
                             metrics=['accuracy'])
 
     x2_single_model.compile(optimizer=Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                             loss=categorical_crossentropy,
-                             metrics=['accuracy'])
-
+                            loss=categorical_crossentropy,
+                            metrics=['accuracy'])
+    
+    # ----------------------------------------------------------------------------------------
     # モデルの学習
     epochs = 200       # 学習用パラメータ
-    batch_size = length
+    batch_size = 8
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           validation_data=([X1_val, X2_val], y_val),
@@ -124,6 +142,8 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
                                  
     # TODO: 学習済みモデルを保存するように変更
 
+
+    # -----------------------------------------------------------------------------------------
     # モデルを評価
     result_multimodal = multimodal_model.predict(x=[X1_test, X2_test])
     result_multimodal_pred = np.argmax(result_multimodal, axis=1)
@@ -142,7 +162,15 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
     print("classification report x1\n", classification_report(result_x1_test, result_x1_pred))
     print("classification report x2\n", classification_report(result_x2_test, result_x2_pred))
 
-    # 各種ログを保存
+    # 結果を保存
+    supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+
+
+def train_all_data(sound_labeled_X1, tfidf_labeled_X2, label, sound_un_labeled_X1, tfidf_un_labeled_X2):          # すべてのデータで学習
+    print("train_all_data")
+
+# 教師あり学習のログを保存
+def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
     now = datetime.datetime.now()                                   # 現在時刻を取得(YYYYMMDD_hhmm)
     make_dir = "./train_log/" +  now.strftime('%Y%m%d_%H%M')
     os.mkdir(make_dir)                                              # 現在時刻のディレクトリを作成
@@ -208,21 +236,6 @@ def train_SetData_only(sound_labeled_X1, tfidf_labeled_X2, label):      # セッ
     plt.savefig(make_dir + "/reslt_graph" + now.strftime('%Y%m%d_%H%M') + '.png')
     plt.show()
 
-
-def train_all_data(sound_labeled_X1, tfidf_labeled_X2, label, sound_un_labeled_X1, tfidf_un_labeled_X2):          # すべてのデータで学習
-    print("train_all_data")
-
-
-
-# モデル評価用関数
-def eval_SetData_only():       # train_SetData_only()モデルの評価
-    print("eval_SetData_only")
-
-
-def eval_all_data():           # train_all_data()モデルの評価
-    print("eval_all_data")
-
-
 def main():
     # メタデータのディレクトリ
     meta_data = pd.read_csv("data/supervised_list.csv", header=0)
@@ -243,7 +256,7 @@ def main():
 
     # モードを選択
     print("\n--\nSelect a function to execute")
-    print("[0]train_SetData_only\n[1]train_all_data\n[2]eval_SetData_only\n[3]eval_all_data\n")
+    print("[0]train_SetData_only\n[1]train_all_data\n")
     mode = input("imput the number:")
 
     # 実行する関数によって分岐
@@ -284,12 +297,6 @@ def main():
         print("missing tfidf data:", tfidf_un_labeled_X2.isnull().sum().sum() / 553, "\n")
 
         train_all_data(sound_labeled_X1, tfidf_labeled_X2, label_list, sound_un_labeled_X1, tfidf_un_labeled_X2)
-
-    elif mode == '2':       # 教師ありデータのみのモデルを評価
-        eval_SetData_only()
-
-    elif mode == '3':       # すべてのデータのモデルを評価
-        eval_all_data()
 
     else:
         print("error")
