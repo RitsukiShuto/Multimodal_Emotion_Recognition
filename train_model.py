@@ -25,28 +25,30 @@ from keras.utils.vis_utils import plot_model
 def X1_encoder(length, X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(batch_shape=(length, X1_dim), name='input_X1')
-    hidden = Dense(256, activation='relu')(input_X1)
-    hidden = Dense(128, activation='relu')(hidden)
-    z1 = Dense(50, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(input_X1)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
+    z1 = Dense(4, activation='relu')(hidden)
 
     # 単一モダリティでの分類用のネットワーク
-    c_x1 = Dropout(0.5)(z1)
-    z12 = Dense(8, activation='softmax')(c_x1)
-    x1_single_model = Model(input_X1, z12)
+    c_x1 = Dropout(0.5)(hidden)
+    c_x1 = Dense(8, activation='softmax')(c_x1)
+    x1_single_model = Model(input_X1, c_x1)
 
     return input_X1, z1, x1_single_model
 
 def X2_encoder(length, X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(batch_shape=(length, X2_dim), name='input_X2')
-    hidden = Dense(256, activation='relu')(input_X2)
-    hidden = Dense(128, activation='relu')(hidden)
-    z2 = Dense(50, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(input_X2)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
+    z2 = Dense(4, activation='relu')(hidden)
 
     # 単一モダリティでの分類用のネットワーク
-    c_x2 = Dropout(0.5)(z2)
-    z22 = Dense(8, activation='softmax')(c_x2)
-    x2_single_model = Model(input_X2, z22)
+    c_x2 = Dropout(0.5)(hidden)
+    c_x2 = Dense(8, activation='softmax')(c_x2)
+    x2_single_model = Model(input_X2, c_x2)
 
     return input_X2, z2, x2_single_model
 
@@ -54,12 +56,12 @@ def X2_encoder(length, X2_dim):
 def X1_decoder(length, X1_dim):
     # モダリティ1の復元
     dec_input_X1 = Input(batch_shape=(length, X1_dim))
-    dec_h11 = Dense(16, activation='relu')(dec_input_X1)
-    dec_h12 = Dense(32, activation='relu')(dec_h11)
-    dec_h13 = Dense(64, activation='relu')(dec_h12)
-    dec_h14 = Dense(128, activation='relu')(dec_h13)
-    dec_h15 = Dense(256, activation='relu')(dec_h14)
-    dec_output_X1 = Dense(533, activation='relu')(dec_h15)
+    hidden = Dense(16, activation='relu')(dec_input_X1)
+    hidden = Dense(32, activation='relu')(hidden)
+    hidden = Dense(64, activation='relu')(hidden)
+    hidden = Dense(128, activation='relu')(hidden)
+    hidden = Dense(256, activation='relu')(hidden)
+    dec_output_X1 = Dense(533, activation='relu')(hidden)
 
     dec_X1 = Model(dec_input_X1, dec_output_X1)
 
@@ -68,10 +70,10 @@ def X1_decoder(length, X1_dim):
 def X2_decoder(length, X2_dim):
     # モダリティ2の復元
     dec_input_X2 = Input(batch_shape=(length, X2_dim))
-    dec_h21 = Dense(16, activation='relu')(dec_input_X2)
-    dec_h22 = Dense(32, activation='relu')(dec_h21)
-    dec_h23 = Dense(64, activation='relu')(dec_h22)
-    dec_output_X2 = Dense(128, activation='relu')(dec_h23)
+    hidden = Dense(16, activation='relu')(dec_input_X2)
+    hidden = Dense(32, activation='relu')(hidden)
+    hidden = Dense(64, activation='relu')(hidden)
+    dec_output_X2 = Dense(128, activation='relu')(hidden)
 
     dec_X2 = Model(dec_input_X2, dec_output_X2)
 
@@ -88,9 +90,8 @@ def classification_layer(input_X1, input_X2, z1, z2):
     classification = Dense(50, activation='relu', name='classification_6')(classification)
     classification = Dense(10, activation='relu', name='classification_7')(classification)
 
-
     # 出力層
-    classification_output = Dropout(0.5)(classification)
+    classification_output = Dropout(0.1)(classification)
     output = Dense(8, activation='softmax', name='output_layer')(classification_output)
 
     multimodal_model = Model([input_X1, input_X2], output)
@@ -99,8 +100,6 @@ def classification_layer(input_X1, input_X2, z1, z2):
 
 # 教師あり学習
 def supervised_learning(X1, X2, y):      # セットになったデータのみ学習
-    print("supervised_learning")
-
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.15, random_state=0)
     X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.15, random_state=0)
@@ -124,16 +123,16 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     multimodal_model = classification_layer(input_X1, input_X2, z1, z2)
 
     # モデル生成
-    multimodal_model.compile(optimizer=Adam(lr=0.001), loss=categorical_crossentropy, metrics=['accuracy'])
+    multimodal_model.compile(optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    x1_single_model.compile(optimizer=Adam(lr=0.001), loss=categorical_crossentropy, metrics=['accuracy'])
+    x1_single_model.compile(optimizer='SGD', loss=categorical_crossentropy, metrics=['accuracy'])
 
-    x2_single_model.compile(optimizer=Adam(lr=0.001), loss=categorical_crossentropy, metrics=['accuracy'])
-                            
+    x2_single_model.compile(optimizer='SGD', loss=categorical_crossentropy, metrics=['accuracy'])
+
     
     # ----------------------------------------------------------------------------------------
     # モデルの学習
-    epochs = 1000        # 学習用パラメータ
+    epochs = 200        # 学習用パラメータ
     batch_size = 257      # lengthを入れてもOK
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
@@ -147,7 +146,7 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train,
                                  validation_data=(X2_val, y_val),
                                  batch_size = batch_size, epochs=epochs)
-                                 
+
     # TODO: 学習済みモデルを保存するように変更
 
 
@@ -179,47 +178,46 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
 
 # 教師あり学習のログを保存
 def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
-    now = datetime.datetime.now()                                   # 現在時刻を取得(YYYYMMDD_hhmm)
-    make_dir = "./train_log/" +  now.strftime('%Y%m%d_%H%M')
+    now = datetime.datetime.now()                                   # 現在時刻を取得
+    file_name = now.strftime('%Y%m%d_%H%M')                         # 現在時刻を文字列として格納
+
+    make_dir = "./train_log/" +  file_name
     os.mkdir(make_dir)                                              # 現在時刻のディレクトリを作成
 
     # モデルの構成を保存(.png)
-    plot_model(multimodal_model, to_file=make_dir + '/MM_model_shape' + now.strftime('%Y%m%d_%H%M') + '.png')
-    plot_model(x1_single_model, to_file=make_dir + '/x1_model_shape' + now.strftime('%Y%m%d_%H%M') + '.png')
-    plot_model(x2_single_model, to_file=make_dir + '/x2_model_shape' + now.strftime('%Y%m%d_%H%M') + '.png')
+    plot_model(multimodal_model, to_file=make_dir + '/model_shape_MM' + file_name + '.png')
+    plot_model(x1_single_model, to_file=make_dir + '/model_shape_x1' + file_name + '.png')
+    plot_model(x2_single_model, to_file=make_dir + '/model_shape_x2' + file_name + '.png')
 
     # 学習ログ(.csv)
     df1 = pd.DataFrame(multimodal_fit.history)      # DataFrame化
     df2 = pd.DataFrame(x1_fit.history)
     df3 = pd.DataFrame(x2_fit.history)
 
-    df1.to_csv(make_dir + '/MM_train_log' + now.strftime('%Y%m%d_%H%M') + '.csv')     # csvで保存
-    df2.to_csv(make_dir + '/x1_train_log' + now.strftime('%Y%m%d_%H%M') + '.csv')
-    df3.to_csv(make_dir + '/x2_train_log' + now.strftime('%Y%m%d_%H%M') + '.csv')
+    df1.to_csv(make_dir + '/train_log_MM' + file_name + '.csv')     # csvで保存
+    df2.to_csv(make_dir + '/train_log_x1' + file_name + '.csv')
+    df3.to_csv(make_dir + '/train_log_x2' + file_name + '.csv')
 
     # グラフ(.png)
     fig1 = plt.figure()
-    fig2 = plt.figure()
-    fig3 = plt.figure()
-
     ax1 = fig1.add_subplot(2, 1, 1)      # multimodal loss
     ax2 = fig1.add_subplot(2, 1, 2)      # multimodal acc
-
-    ax3 = fig2.add_subplot(2, 1, 1)      # x1 loss
-    ax4 = fig2.add_subplot(2, 1, 2)      # x1 acc
-
-    ax5 = fig3.add_subplot(2, 1, 1)      # x2 loss 
-    ax6 = fig3.add_subplot(2, 1, 2)      # x2 acc
 
     ax1.plot(multimodal_fit.history['loss'])
     ax1.plot(multimodal_fit.history['val_loss'])
     ax1.set_title('multimodal loss')
     ax1.legend(['Train', 'Validation'], loc='upper left')
-
+    
     ax2.plot(multimodal_fit.history['accuracy'])
     ax2.plot(multimodal_fit.history['val_accuracy'])
     ax2.set_title('multimodal accuracy')
     ax2.legend(['Train', 'Validation'], loc='upper left')
+
+    plt.savefig(make_dir + "/reslt_multimodal_graph" + file_name + '.png')
+
+    fig2 = plt.figure()
+    ax3 = fig2.add_subplot(2, 1, 1)      # x1 loss
+    ax4 = fig2.add_subplot(2, 1, 2)      # x1 acc
 
     ax3.plot(x1_fit.history['loss'])
     ax3.plot(x1_fit.history['val_loss'])
@@ -231,6 +229,12 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax4.set_title('x1 accuracy')
     ax4.legend(['Train', 'Validation'], loc='upper left')
 
+    plt.savefig(make_dir + "/reslt_x1_graph" + file_name + '.png')
+
+    fig3 = plt.figure()
+    ax5 = fig3.add_subplot(2, 1, 1)      # x2 loss 
+    ax6 = fig3.add_subplot(2, 1, 2)      # x2 acc
+
     ax5.plot(x2_fit.history['loss'])
     ax5.plot(x2_fit.history['val_loss'])
     ax5.set_title('x2 loss')
@@ -241,14 +245,7 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax6.set_title('x2 accuracy')
     ax6.legend(['Train', 'Validation'], loc='upper left')
 
-    fig1.tight_layout()
-    plt.savefig(make_dir + "/reslt_multimodal_graph" + now.strftime('%Y%m%d_%H%M') + '.png')
-
-    fig2.tight_layout()
-    plt.savefig(make_dir + "/reslt_x1_graph" + now.strftime('%Y%m%d_%H%M') + '.png')
-
-    fig3.tight_layout()
-    plt.savefig(make_dir + "/reslt_x2_graph" + now.strftime('%Y%m%d_%H%M') + '.png')
+    plt.savefig(make_dir + "/reslt_x2_graph" + file_name + '.png')
 
     plt.show()
 
