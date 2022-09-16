@@ -18,32 +18,33 @@ from keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
 from keras.models import save_model, load_model
-from keras.layers import Dense, Dropout, Concatenate
+from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D
 from keras.utils.vis_utils import plot_model
 
 # エンコーダ
-def X1_encoder(length, X1_dim):
+def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
-    input_X1 = Input(batch_shape=(length, X1_dim), name='input_X1')
+    input_X1 = Input(shape=(None, X1_dim), name='input_X1')
     hidden = Dense(30, activation='relu')(input_X1)
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
-    z1 = Dense(4, activation='relu')(hidden)
+    z1 = Dense(5, activation='relu')(hidden)
 
     # 単一モダリティでの分類用のネットワーク
     c_x1 = Dropout(0.5)(hidden)
     c_x1 = Dense(8, activation='softmax')(c_x1)
     x1_single_model = Model(input_X1, c_x1)
-
+    
+    
     return input_X1, z1, x1_single_model
 
-def X2_encoder(length, X2_dim):
+def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
-    input_X2 = Input(batch_shape=(length, X2_dim), name='input_X2')
-    hidden = Dense(30, activation='relu')(input_X2)
-    hidden = Dense(30, activation='relu')(hidden)
+    input_X2 = Input(shape=(None, X2_dim), name='input_X2')
+    hidden = Dense(100, activation='relu')(input_X2)
+    hidden = Dense(50, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
-    z2 = Dense(4, activation='relu')(hidden)
+    z2 = Dense(5, activation='relu')(hidden)
 
     # 単一モダリティでの分類用のネットワーク
     c_x2 = Dropout(0.5)(hidden)
@@ -53,9 +54,9 @@ def X2_encoder(length, X2_dim):
     return input_X2, z2, x2_single_model
 
 # デコーダ
-def X1_decoder(length, X1_dim):
+def X1_decoder(X1_dim):
     # モダリティ1の復元
-    dec_input_X1 = Input(batch_shape=(length, X1_dim))
+    dec_input_X1 = Input(batch_shape=(None, X1_dim))
     hidden = Dense(16, activation='relu')(dec_input_X1)
     hidden = Dense(32, activation='relu')(hidden)
     hidden = Dense(64, activation='relu')(hidden)
@@ -67,9 +68,9 @@ def X1_decoder(length, X1_dim):
 
     return dec_X1
 
-def X2_decoder(length, X2_dim):
+def X2_decoder(X2_dim):
     # モダリティ2の復元
-    dec_input_X2 = Input(batch_shape=(length, X2_dim))
+    dec_input_X2 = Input(batch_shape=(None, X2_dim))
     hidden = Dense(16, activation='relu')(dec_input_X2)
     hidden = Dense(32, activation='relu')(hidden)
     hidden = Dense(64, activation='relu')(hidden)
@@ -85,13 +86,12 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat =  Concatenate()([z1, z2])
 
     # 分類層
-    classification_input = Dense(200, activation='relu', name='classification_1')(concat)
-    classification = Dense(100, activation='relu', name='classification_2')(classification_input)
-    classification = Dense(50, activation='relu', name='classification_6')(classification)
-    classification = Dense(10, activation='relu', name='classification_7')(classification)
+    classification_input = Dense(8, activation='relu', name='classification_1')(concat)
+    classification = Dense(8, activation='relu', name='classification_2')(classification_input)
+    #classification = Dense(8, activation='relu', name='classification_7')(classification)
 
     # 出力層
-    classification_output = Dropout(0.1)(classification)
+    classification_output = Dropout(0.5)(classification)
     output = Dense(8, activation='softmax', name='output_layer')(classification_output)
 
     multimodal_model = Model([input_X1, input_X2], output)
@@ -101,8 +101,8 @@ def classification_layer(input_X1, input_X2, z1, z2):
 # 教師あり学習
 def supervised_learning(X1, X2, y):      # セットになったデータのみ学習
     # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.15, random_state=0)
-    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.15, random_state=0)
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
+    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
 
     # モデルを定義
     # 各種パラメータを決定
@@ -116,24 +116,24 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
 
     # 特徴量抽出層
-    input_X1, z1, x1_single_model = X1_encoder(length, X1_dim)
-    input_X2, z2, x2_single_model = X2_encoder(length, X2_dim)
+    input_X1, z1, x1_single_model = X1_encoder(X1_dim)
+    input_X2, z2, x2_single_model = X2_encoder(X2_dim)
 
     # 分類層
     multimodal_model = classification_layer(input_X1, input_X2, z1, z2)
 
     # モデル生成
-    multimodal_model.compile(optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8), loss=categorical_crossentropy, metrics=['accuracy'])
+    multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    x1_single_model.compile(optimizer='SGD', loss=categorical_crossentropy, metrics=['accuracy'])
+    x1_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    x2_single_model.compile(optimizer='SGD', loss=categorical_crossentropy, metrics=['accuracy'])
+    x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     
     # ----------------------------------------------------------------------------------------
     # モデルの学習
-    epochs = 200        # 学習用パラメータ
-    batch_size = 257      # lengthを入れてもOK
+    epochs = 300        # 学習用パラメータ
+    batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           validation_data=([X1_val, X2_val], y_val),
@@ -174,7 +174,33 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
 
 # 半教師あり学習
 def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべてのデータで学習
-    print("semi supervised learning")
+    # データを分割
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
+    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
+
+
+    # モデルを定義
+    # 各種パラメータを決定
+    length = len(X1_train)          # 学習データの数
+    X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
+    X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
+
+    # DEBUG
+    print("X1_train.shape:", X1_train.shape)        # 学習用モダリティ1(データ数, 入力次元数)
+    print("X2_train.shape:", X2_train.shape)        # 学習用モダリティ2(データ数, 入力次元数)
+    print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
+
+    # 特徴量抽出層
+    input_X1, z1 = X1_encoder(X1_dim)
+    input_X2, z2 = X2_encoder(X2_dim)
+
+    # 分類層
+    multimodal_model = classification_layer(input_X1, input_X2, z1, z2)
+
+    # モデル生成
+    multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
+
+    
 
 # 教師あり学習のログを保存
 def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
@@ -185,9 +211,9 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     os.mkdir(make_dir)                                              # 現在時刻のディレクトリを作成
 
     # モデルの構成を保存(.png)
-    plot_model(multimodal_model, to_file=make_dir + '/model_shape_MM' + file_name + '.png')
-    plot_model(x1_single_model, to_file=make_dir + '/model_shape_x1' + file_name + '.png')
-    plot_model(x2_single_model, to_file=make_dir + '/model_shape_x2' + file_name + '.png')
+    plot_model(multimodal_model, to_file=make_dir + '/model_shape_MM' + file_name + '.png', show_shapes=True)
+    plot_model(x1_single_model, to_file=make_dir + '/model_shape_x1' + file_name + '.png', show_shapes=True)
+    plot_model(x2_single_model, to_file=make_dir + '/model_shape_x2' + file_name + '.png', show_shapes=True)
 
     # 学習ログ(.csv)
     df1 = pd.DataFrame(multimodal_fit.history)      # DataFrame化
@@ -207,7 +233,7 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax1.plot(multimodal_fit.history['val_loss'])
     ax1.set_title('multimodal loss')
     ax1.legend(['Train', 'Validation'], loc='upper left')
-    
+
     ax2.plot(multimodal_fit.history['accuracy'])
     ax2.plot(multimodal_fit.history['val_accuracy'])
     ax2.set_title('multimodal accuracy')
@@ -269,6 +295,20 @@ def main():
     X1 = sound_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
     X2 = tfidf_labeled_X2.to_numpy()
     y = label_list.to_numpy()
+
+    print(X1)
+
+
+    # データを標準化
+    x_mean = X1.mean(keepdims=True)
+    x_std = X1.std(keepdims=True)
+    #X1 = (X1 - x_mean)/(x_std)
+
+    x_min = X2.min(keepdims=True)
+    x_max = X2.max(keepdims=True)
+    #X2 = (X2 - x_min)/(x_max - x_min) 
+
+    print(X1)
 
     # モードを選択
     print("\n--\nSelect a function to execute")
