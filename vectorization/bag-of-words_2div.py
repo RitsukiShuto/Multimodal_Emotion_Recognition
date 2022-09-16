@@ -31,8 +31,8 @@ for sentence in words_all:
     # 辞書の更新
     dct.add_documents([line.split()])
 
-word2id = dct.token2id # 単語 -> ID
-print(word2id)
+word2id = dct.token2id      # 単語 -> ID
+print(word2id)              # DEBUG
 
 # 文をBoWに変換
 words_all = read_csv()
@@ -46,7 +46,7 @@ for sentence in words_all:
     bow_set.append(bow_format)
 
     bow = mtu.corpus2dense([bow_format], num_terms=len(dct)).T[0]
-    bow.tolist()        # numpyからlistに変える
+    bow.tolist()            # numpyからlistに変える
     list(map(int, bow.tolist()))
 
     bow_list.append(bow)
