@@ -71,13 +71,13 @@ def main():
             # ラベルの付与状態ごとに出力先を分ける
             if dir == "../data/wav/full_labeled":       # 'emotion'ラベル付き
                 print("[FULL LABELED]" ,wav)
-                pow = pow_spectrum(wav, 512)
+                pow = pow_spectrum(wav, 64)
                 labeled_pow.append(pow)
                 cnt_full_labeled += 1
 
             else:                                       # ラベルなし
                 print("[UN LABELED]", wav)
-                pow = pow_spectrum(wav, 512)
+                pow = pow_spectrum(wav, 64)
                 un_labeled_pow.append(pow)
                 cnt_un_labeled += 1
 
