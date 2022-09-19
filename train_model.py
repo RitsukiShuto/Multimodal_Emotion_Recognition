@@ -21,13 +21,18 @@ from keras.models import save_model, load_model
 from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D
 from keras.utils.vis_utils import plot_model
 
- # TODO: vaeを追加する
-
 # エンコーダ
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(None, X1_dim), name='input_X1')
-    hidden = Dense(30, activation='relu')(input_X1)
+    hidden = Dense(100, activation='relu')(input_X1)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z1 = Dense(8, activation='relu')(hidden)
@@ -44,7 +49,15 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(100, activation='relu')(input_X2)
+    hidden = Dense(1000, activation='relu')(input_X2)
+    hidden = Dense(2000, activation='relu')(hidden)
+    hidden = Dense(2000, activation='relu')(hidden)
+    hidden = Dense(1000, activation='relu')(hidden)
+    hidden = Dense(500, activation='relu')(hidden)
+    hidden = Dense(500, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
     hidden = Dense(50, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z2 = Dense(8, activation='relu')(hidden)
@@ -55,6 +68,7 @@ def X2_encoder(X2_dim):
     c_x2 = Dropout(0.5)(hidden)
     c_x2 = Dense(8, activation='softmax')(c_x2)
     x2_single_model = Model(input_X2, c_x2)
+
 
     return input_X2, z2, x2_single_model
 
@@ -88,14 +102,12 @@ def X2_decoder(X2_dim):
 # 分類層
 def classification_layer(input_X1, input_X2, z1, z2):
     # 特徴量を合成
-    maxpooling_z1 = MaxPooling1D(pool_size=4)
-    maxpooling_z2 = MaxPooling1D(pool_size=4)
-    maxpooling =  Concatenate()([maxpooling_z1, maxpooling_z2])
+    # TODO: MaxPooling実装したい
 
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification_input = Dense(8, activation='relu', name='classification_1')(maxpooling)     # concat or maxpooling
+    classification_input = Dense(8, activation='relu', name='classification_1')(concat)     # concat or maxpooling
     classification = Dense(8, activation='relu', name='classification_2')(classification_input)
     #classification = Dense(8, activation='relu', name='classification_7')(classification)
 
