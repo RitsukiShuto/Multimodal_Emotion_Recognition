@@ -30,7 +30,7 @@ def X1_encoder(X1_dim):
     hidden = Dense(30, activation='relu')(input_X1)
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
-    z1 = Dense(5, activation='relu')(hidden)
+    z1 = Dense(8, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -38,7 +38,6 @@ def X1_encoder(X1_dim):
     c_x1 = Dropout(0.5)(hidden)
     c_x1 = Dense(8, activation='softmax')(c_x1)
     x1_single_model = Model(input_X1, c_x1)
-    
     
     return input_X1, z1, x1_single_model
 
@@ -48,7 +47,7 @@ def X2_encoder(X2_dim):
     hidden = Dense(100, activation='relu')(input_X2)
     hidden = Dense(50, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
-    z2 = Dense(5, activation='relu')(hidden)
+    z2 = Dense(8, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -89,10 +88,14 @@ def X2_decoder(X2_dim):
 # 分類層
 def classification_layer(input_X1, input_X2, z1, z2):
     # 特徴量を合成
-    concat =  Concatenate()([z1, z2])
+    maxpooling_z1 = MaxPooling1D(pool_size=4)
+    maxpooling_z2 = MaxPooling1D(pool_size=4)
+    maxpooling =  Concatenate()([maxpooling_z1, maxpooling_z2])
+
+    concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification_input = Dense(8, activation='relu', name='classification_1')(concat)
+    classification_input = Dense(8, activation='relu', name='classification_1')(maxpooling)     # concat or maxpooling
     classification = Dense(8, activation='relu', name='classification_2')(classification_input)
     #classification = Dense(8, activation='relu', name='classification_7')(classification)
 
