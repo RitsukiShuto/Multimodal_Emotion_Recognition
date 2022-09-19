@@ -25,15 +25,12 @@ from keras.utils.vis_utils import plot_model
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(None, X1_dim), name='input_X1')
-    hidden = Dense(100, activation='relu')(input_X1)
-    hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(100, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(40, activation='relu')(input_X1)
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z1 = Dense(8, activation='relu')(hidden)
 
@@ -49,16 +46,15 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(1000, activation='relu')(input_X2)
-    hidden = Dense(2000, activation='relu')(hidden)
-    hidden = Dense(2000, activation='relu')(hidden)
-    hidden = Dense(1000, activation='relu')(hidden)
-    hidden = Dense(500, activation='relu')(hidden)
-    hidden = Dense(500, activation='relu')(hidden)
+    hidden = Dense(300, activation='relu')(input_X2)
+    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
     hidden = Dense(100, activation='relu')(hidden)
     hidden = Dense(100, activation='relu')(hidden)
     hidden = Dense(100, activation='relu')(hidden)
     hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z2 = Dense(8, activation='relu')(hidden)
 
