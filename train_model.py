@@ -21,6 +21,8 @@ from keras.models import save_model, load_model
 from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D
 from keras.utils.vis_utils import plot_model
 
+ # TODO: vaeを追加する
+
 # エンコーダ
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
@@ -29,6 +31,8 @@ def X1_encoder(X1_dim):
     hidden = Dense(30, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z1 = Dense(5, activation='relu')(hidden)
+
+    # TODO: デコーダ用の層を作成する
 
     # 単一モダリティでの分類用のネットワーク
     c_x1 = Dropout(0.5)(hidden)
@@ -45,6 +49,8 @@ def X2_encoder(X2_dim):
     hidden = Dense(50, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
     z2 = Dense(5, activation='relu')(hidden)
+
+    # TODO: デコーダ用の層を作成する
 
     # 単一モダリティでの分類用のネットワーク
     c_x2 = Dropout(0.5)(hidden)
@@ -200,7 +206,6 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    
 
 # 教師あり学習のログを保存
 def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
@@ -233,6 +238,7 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax1.plot(multimodal_fit.history['val_loss'])
     ax1.set_title('multimodal loss')
     ax1.legend(['Train', 'Validation'], loc='upper left')
+    
 
     ax2.plot(multimodal_fit.history['accuracy'])
     ax2.plot(multimodal_fit.history['val_accuracy'])
