@@ -119,7 +119,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
 def supervised_learning(X1, X2, y):      # セットになったデータのみ学習
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
-    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
+    #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
 
     # モデルを定義
     # 各種パラメータを決定
@@ -153,15 +153,12 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
-                                          validation_data=([X1_val, X2_val], y_val),
                                           batch_size=batch_size, epochs=epochs)
 
     x1_fit = x1_single_model.fit(x=X1_train, y=y_train,
-                                 validation_data=(X1_val, y_val),
                                  batch_size = batch_size, epochs=epochs)
 
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train,
-                                 validation_data=(X2_val, y_val),
                                  batch_size = batch_size, epochs=epochs)
 
     # TODO: 学習済みモデルを保存するように変更
