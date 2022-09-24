@@ -25,14 +25,12 @@ from keras.utils.vis_utils import plot_model
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(None, X1_dim), name='input_X1')
-    hidden = Dense(40, activation='relu')(input_X1)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
-    z1 = Dense(8, activation='relu')(hidden)
+    hidden = Dense(256, activation='relu')(input_X1)
+    #hidden = Dense(32, activation='relu')(hidden)
+    hidden = Dense(128, activation='relu')(hidden)
+    #hidden = Dense(16, activation='relu')(hidden)
+    #hidden = Dense(10, activation='relu')(hidden)
+    z1 = Dense(64, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -46,17 +44,12 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(300, activation='relu')(input_X2)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(100, activation='relu')(hidden)
-    hidden = Dense(100, activation='relu')(hidden)
-    hidden = Dense(100, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
-    z2 = Dense(8, activation='relu')(hidden)
+    hidden = Dense(256, activation='relu')(input_X2)
+    #hidden = Dense(256, activation='relu')(hidden)
+    hidden = Dense(128, activation='relu')(hidden)
+    #hidden = Dense(128, activation='relu')(hidden)
+    #hidden = Dense(64, activation='relu')(hidden)
+    z2 = Dense(64, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -64,7 +57,6 @@ def X2_encoder(X2_dim):
     c_x2 = Dropout(0.5)(hidden)
     c_x2 = Dense(8, activation='softmax')(c_x2)
     x2_single_model = Model(input_X2, c_x2)
-
 
     return input_X2, z2, x2_single_model
 
@@ -103,9 +95,10 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification_input = Dense(8, activation='relu', name='classification_1')(concat)     # concat or maxpooling
-    classification = Dense(8, activation='relu', name='classification_2')(classification_input)
-    #classification = Dense(8, activation='relu', name='classification_7')(classification)
+    classification = Dense(36, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+    #classification = Dense(36, activation='relu', name='classification_2')(classification_input)
+    #classification = Dense(18, activation='relu', name='classification_3')(classification)
+    classification = Dense(18, activation='relu', name='classification_4')(classification)
 
     # 出力層
     classification_output = Dropout(0.5)(classification)
@@ -120,6 +113,7 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
+
 
     # モデルを定義
     # 各種パラメータを決定
@@ -149,39 +143,33 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
     
     # ----------------------------------------------------------------------------------------
     # モデルの学習
-    epochs = 300        # 学習用パラメータ
+    epochs = 250        # 学習用パラメータ
     batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           batch_size=batch_size, epochs=epochs)
 
-    x1_fit = x1_single_model.fit(x=X1_train, y=y_train,
-                                 batch_size = batch_size, epochs=epochs)
+    x1_fit = x1_single_model.fit(x=X1_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
-    x2_fit = x2_single_model.fit(x=X2_train, y=y_train,
-                                 batch_size = batch_size, epochs=epochs)
-
-    # TODO: 学習済みモデルを保存するように変更
-
+    x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
     # -----------------------------------------------------------------------------------------
     # モデルを評価
-    result_multimodal = multimodal_model.predict(x=[X1_test, X2_test])
-    result_multimodal_pred = np.argmax(result_multimodal, axis=1)
-    result_multimodal_test = np.argmax(y_test, axis=1)
+    pred_MM = multimodal_model.predict(x=[X1_test, X2_test])
+    score_X1 = x1_single_model.predict(X1_test)
+    score_X2 = x2_single_model.predict(X2_test)
 
-    reslut_x1 = x1_single_model.predict(x=X1_test)
-    result_x1_pred = np.argmax(reslut_x1, axis=1)
-    result_x1_test = np.argmax(y_test, axis=1)
+    for i,v in enumerate(pred_MM):
+        pre_ans = v.argmax()
+        ans = y_test[i].argmax()
+        X1_dat = X1_test[i]
+        X2_dat = X2_test[i]
 
-    reslut_x2 = x2_single_model.predict(x=X2_test)
-    result_x2_pred = np.argmax(reslut_x2, axis=1)
-    result_x2_test = np.argmax(y_test, axis=1)
+        if ans == pre_ans: continue
 
-    # 結果を表示
-    print("classification report multimodal\n",classification_report(result_multimodal_test, result_multimodal_pred))
-    print("classification report x1\n", classification_report(result_x1_test, result_x1_pred))
-    print("classification report x2\n", classification_report(result_x2_test, result_x2_pred))
+        print("pred:", pre_ans, "ans:", ans)
+        print(X1_dat[0:5])
+        print(X2_dat[0:5])
 
     # 結果を保存
     supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
@@ -214,7 +202,6 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-
 # 教師あり学習のログを保存
 def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
     now = datetime.datetime.now()                                   # 現在時刻を取得
@@ -243,15 +230,12 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax2 = fig1.add_subplot(2, 1, 2)      # multimodal acc
 
     ax1.plot(multimodal_fit.history['loss'])
-    ax1.plot(multimodal_fit.history['val_loss'])
     ax1.set_title('multimodal loss')
-    ax1.legend(['Train', 'Validation'], loc='upper left')
+    ax1.legend(['Train'], loc='upper left')
     
-
     ax2.plot(multimodal_fit.history['accuracy'])
-    ax2.plot(multimodal_fit.history['val_accuracy'])
     ax2.set_title('multimodal accuracy')
-    ax2.legend(['Train', 'Validation'], loc='upper left')
+    ax2.legend(['Train'], loc='upper left')
 
     plt.savefig(make_dir + "/reslt_multimodal_graph" + file_name + '.png')
 
@@ -260,14 +244,12 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax4 = fig2.add_subplot(2, 1, 2)      # x1 acc
 
     ax3.plot(x1_fit.history['loss'])
-    ax3.plot(x1_fit.history['val_loss'])
     ax3.set_title('x1 loss')
-    ax3.legend(['Train', 'Validation'], loc='upper left')
+    ax3.legend(['Train'], loc='upper left')
 
     ax4.plot(x1_fit.history['accuracy'])
-    ax4.plot(x1_fit.history['val_accuracy'])
     ax4.set_title('x1 accuracy')
-    ax4.legend(['Train', 'Validation'], loc='upper left')
+    ax4.legend(['Train'], loc='upper left')
 
     plt.savefig(make_dir + "/reslt_x1_graph" + file_name + '.png')
 
@@ -276,14 +258,12 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
     ax6 = fig3.add_subplot(2, 1, 2)      # x2 acc
 
     ax5.plot(x2_fit.history['loss'])
-    ax5.plot(x2_fit.history['val_loss'])
     ax5.set_title('x2 loss')
-    ax5.legend(['Train', 'Validation'], loc='upper left')
+    ax5.legend(['Train'], loc='upper left')
 
     ax6.plot(x2_fit.history['accuracy'])
-    ax6.plot(x2_fit.history['val_accuracy'])
     ax6.set_title('x2 accuracy')
-    ax6.legend(['Train', 'Validation'], loc='upper left')
+    ax6.legend(['Train'], loc='upper left')
 
     plt.savefig(make_dir + "/reslt_x2_graph" + file_name + '.png')
 
@@ -310,9 +290,6 @@ def main():
     X2 = tfidf_labeled_X2.to_numpy()
     y = label_list.to_numpy()
 
-    print(X1)
-
-
     # データを標準化
     x_mean = X1.mean(keepdims=True)
     x_std = X1.std(keepdims=True)
@@ -321,8 +298,6 @@ def main():
     x_min = X2.min(keepdims=True)
     x_max = X2.max(keepdims=True)
     #X2 = (X2 - x_min)/(x_max - x_min) 
-
-    print(X1)
 
     # モードを選択
     print("\n--\nSelect a function to execute")
