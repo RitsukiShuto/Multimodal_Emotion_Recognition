@@ -233,6 +233,9 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 
                 # TODO: 不正解のリストを保存
 
+        # TODO: 精度を表示
+        
+
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
     # ログを保存
