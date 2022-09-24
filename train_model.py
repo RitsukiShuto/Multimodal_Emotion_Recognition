@@ -153,10 +153,9 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
 
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
-    # TODO:モデルの保存機能を追加する
-    # ファイル名を生成
-    now = datetime.datetime.now()                                   # 現在時刻を取得 TODO: グローバル変数にしてもいいかも
-    MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')
+    # モデルを保存
+    now = datetime.datetime.now()                                                       # 現在時刻を取得 TODO: グローバル変数にしてもいいかも
+    MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
     x1_model = "models/x1/x1_model" + now.strftime('%Y%m%d_%H%M')
     x2_model = "models/x2/x2_model" + now.strftime('%Y%m%d_%H%M')
 
@@ -166,9 +165,9 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     x2_single_model.save(x2_model)
 
     # モデルの評価
-    evaluate_model(multimodal_model, x1_single_model, x2_single_model,
-                   X1_test, X2_test, y_test, supervised_meta)
+    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, supervised_meta)
 
+    # ログを保存
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
 
 # 半教師あり学習
@@ -223,12 +222,16 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         #print(X1_dat[0:5])     #DEBUG              # ベクトル化されたデータが表示される。
         #print(X2_dat[0:5])
 
-        # TODO:メタデータから不正解のデータを探す
+        # メタデータから不正解のデータを探す
         for j in range(len(X1)):
-            if X1_dat[0] == X1[j][1]:       # BUG
+            if list(X1_dat[0:]) == list(X1[j][1:]):       # BUG
 
                 print("pred:", pre_ans, "ans:", ans)        # pred:推定, ans:正解
                 print("file name:", X1[j][0])
+
+                # TODO: メタデータを検索して内容を表示
+
+                # TODO: 不正解のリストを保存
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
