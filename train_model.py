@@ -21,6 +21,9 @@ from keras.models import save_model, load_model
 from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D
 from keras.utils.vis_utils import plot_model
 
+import tensorflow as tf
+from tensorflow import keras
+
 # エンコーダ
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
@@ -109,11 +112,10 @@ def classification_layer(input_X1, input_X2, z1, z2):
     return multimodal_model
 
 # 教師あり学習
-def supervised_learning(X1, X2, y):      # セットになったデータのみ学習
+def supervised_learning(X1, X2, y, supervised_meta):      # セットになったデータのみ学習
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
-
 
     # モデルを定義
     # 各種パラメータを決定
@@ -140,10 +142,8 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
 
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    
-    # ----------------------------------------------------------------------------------------
     # モデルの学習
-    epochs = 250        # 学習用パラメータ
+    epochs = 250        # 学習用パラメータ e=250, b=64
     batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
@@ -153,26 +153,23 @@ def supervised_learning(X1, X2, y):      # セットになったデータのみ�
 
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
-    # -----------------------------------------------------------------------------------------
-    # モデルを評価
-    pred_MM = multimodal_model.predict(x=[X1_test, X2_test])
-    score_X1 = x1_single_model.predict(X1_test)
-    score_X2 = x2_single_model.predict(X2_test)
+    # TODO:モデルの保存機能を追加する
+    # ファイル名を生成
+    now = datetime.datetime.now()                                   # 現在時刻を取得 TODO: グローバル変数にしてもいいかも
+    MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')
+    x1_model = "models/x1/x1_model" + now.strftime('%Y%m%d_%H%M')
+    x2_model = "models/x2/x2_model" + now.strftime('%Y%m%d_%H%M')
 
-    for i,v in enumerate(pred_MM):
-        pre_ans = v.argmax()
-        ans = y_test[i].argmax()
-        X1_dat = X1_test[i]
-        X2_dat = X2_test[i]
+    # 保存
+    multimodal_model.save(MM_model)
+    x1_single_model.save(x1_model)
+    x2_single_model.save(x2_model)
 
-        if ans == pre_ans: continue
+    # モデルの評価
+    evaluate_model(multimodal_model, x1_single_model, x2_single_model,
+                   X1_test, X2_test, y_test, supervised_meta)
 
-        print("pred:", pre_ans, "ans:", ans)
-        print(X1_dat[0:5])
-        print(X2_dat[0:5])
-
-    # 結果を保存
-    supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+    save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
 
 # 半教師あり学習
 def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべてのデータで学習
@@ -202,15 +199,47 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-# 教師あり学習のログを保存
-def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
+# モデルの評価とログの保存
+def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
+                   X1_test, X2_test, y_test, supervised_meta):
+
+    X1_df = pd.read_csv("train_data/2div/POW_labeled.csv", header=0)
+    X1 = X1_df.values.tolist()
+
+    # テストデータで推定する
+    pred_MM = multimodal_model.predict(x=[X1_test, X2_test])
+    score_X1 = x1_single_model.predict(X1_test)
+    score_X2 = x2_single_model.predict(X2_test)
+
+    # 不正解のデータを抽出
+    for i,v in enumerate(pred_MM):      # multimodal
+        pre_ans = v.argmax()
+        ans = y_test[i].argmax()
+        X1_dat = X1_test[i]
+        X2_dat = X2_test[i]
+
+        if ans == pre_ans: continue
+
+        #print(X1_dat[0:5])     #DEBUG              # ベクトル化されたデータが表示される。
+        #print(X2_dat[0:5])
+
+        # TODO:メタデータから不正解のデータを探す
+        for j in range(len(X1)):
+            if X1_dat[0] == X1[j][1]:       # BUG
+
+                print("pred:", pre_ans, "ans:", ans)        # pred:推定, ans:正解
+                print("file name:", X1[j][0])
+
+def save_log(multimodal_model, x1_single_model, x2_single_model,
+             multimodal_fit, x1_fit, x2_fit):
+    # ログを保存
     now = datetime.datetime.now()                                   # 現在時刻を取得
     file_name = now.strftime('%Y%m%d_%H%M')                         # 現在時刻を文字列として格納
 
     make_dir = "./train_log/" +  file_name
     os.mkdir(make_dir)                                              # 現在時刻のディレクトリを作成
 
-    # モデルの構成を保存(.png)
+    # ネットワークの構成を保存(.png)
     plot_model(multimodal_model, to_file=make_dir + '/model_shape_MM' + file_name + '.png', show_shapes=True)
     plot_model(x1_single_model, to_file=make_dir + '/model_shape_x1' + file_name + '.png', show_shapes=True)
     plot_model(x2_single_model, to_file=make_dir + '/model_shape_x2' + file_name + '.png', show_shapes=True)
@@ -269,6 +298,7 @@ def supervised_train_save_log(multimodal_model, x1_single_model, x2_single_model
 
     plt.show()
 
+
 def main():
     # メタデータのディレクトリ
     meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)
@@ -301,20 +331,20 @@ def main():
 
     # モードを選択
     print("\n--\nSelect a function to execute")
-    print("[0]supervised_learning\n[1]semi_supervised_learning\n")
+    print("[0]supervised_learning\n[1]semi_supervised_learning\n[2]evaluate_model\n")
     mode = input("imput the number:")
 
     # 実行する関数によって分岐
-    if mode == '0':         # 教師ありデータのみで学習
+    if mode == '0':         # 教師ありマルチモーダル学習        
         # 教師ありデータとラベルを表示
         print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
         print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
         print("label data\n", label_list.head(), "\n")
 
         # 教師あり学習を実行
-        supervised_learning(X1, X2, y)
+        supervised_learning(X1, X2, y, supervised_meta)
 
-    elif mode == '1':       # すべてのデータで学習
+    elif mode == '1':       # 半教師ありマルチモーダル学習
         # 教師なしデータを読み込み
         sound_un_labeled_X1 = pd.read_csv("train_data/2div/POW_un_labeled.csv", header=0, index_col=0)
         tfidf_un_labeled_X2 = pd.read_csv("train_data/2div/TF-IDF_un_labeled_PCA.csv", header=0, index_col=0)
@@ -345,6 +375,19 @@ def main():
         un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
 
         semi_supervised_learning(X1, X2, un_X1, un_X2, y)
+
+    elif mode == "2":
+        # モデルを読み込む
+        # TODO: 読み込むモデルを選べるようにする
+        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20220924_1715")
+        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20220924_1715")
+        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20220924_1715")
+
+        # データを分割
+        X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
+
+        evaluate_model(multimodal_model, x1_single_model, x2_single_model,
+                        X1_test, X2_test, y_test, supervised_meta)
 
     else:
         print("error")
