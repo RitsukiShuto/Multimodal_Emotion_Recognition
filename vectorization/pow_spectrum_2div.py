@@ -73,12 +73,14 @@ def main():
                 print("[FULL LABELED]" ,wav)
                 pow = pow_spectrum(wav, 512)
                 labeled_pow.append(pow)
+                labeled_pow.insert(0, wav)
                 cnt_full_labeled += 1
 
             else:                                       # ラベルなし
                 print("[UN LABELED]", wav)
                 pow = pow_spectrum(wav, 512)
                 un_labeled_pow.append(pow)
+                un_labeled_pow.insert(0, wav)
                 cnt_un_labeled += 1
 
     # CSVで保存
