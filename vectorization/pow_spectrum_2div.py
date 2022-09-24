@@ -71,16 +71,16 @@ def main():
             # ラベルの付与状態ごとに出力先を分ける
             if dir == "../data/wav/full_labeled":       # 'emotion'ラベル付き
                 print("[FULL LABELED]" ,wav)
-                pow = pow_spectrum(wav, 512)
-                labeled_pow.append(pow)
-                labeled_pow.insert(0, wav)
+                pow = pow_spectrum(wav, 64)
+                data =  np.hstack((wav, pow))
+                labeled_pow.append(data)
                 cnt_full_labeled += 1
 
             else:                                       # ラベルなし
                 print("[UN LABELED]", wav)
-                pow = pow_spectrum(wav, 512)
-                un_labeled_pow.append(pow)
-                un_labeled_pow.insert(0, wav)
+                pow = pow_spectrum(wav, 64)
+                data = np.hstack((wav, pow))
+                un_labeled_pow.append(data)
                 cnt_un_labeled += 1
 
     # CSVで保存
@@ -90,8 +90,8 @@ def main():
     df1 = pd.DataFrame(labeled_pow)
     df2 = pd.DataFrame(un_labeled_pow)
 
-    df1.to_csv(labeled_dir, index=True, header=1)
-    df2.to_csv(un_labeled_dir, index=True, header=1)
+    df1.to_csv(labeled_dir, index=False, header=1)
+    df2.to_csv(un_labeled_dir, index=False, header=1)
 
     print("FULL LABELED:", cnt_full_labeled)
     print("UN LABELED:", cnt_un_labeled)
