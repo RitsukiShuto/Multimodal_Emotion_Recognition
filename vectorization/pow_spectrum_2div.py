@@ -68,19 +68,21 @@ def main():
         wav_list = natsorted(old_wav_list)
 
         for wav in wav_list:                    # wavファイルを1つずつ走査
+            fname, ext = os.path.splitext(os.path.basename(wav))
+
             # ラベルの付与状態ごとに出力先を分ける
             if dir == "../data/wav/full_labeled":       # 'emotion'ラベル付き
                 print("[FULL LABELED]" ,wav)
                 pow = pow_spectrum(wav, 64)
-                labeled_pow.append(pow)
-                labeled_pow.insert(0, wav)
+                data =  np.hstack((fname, pow))
+                labeled_pow.append(data)
                 cnt_full_labeled += 1
 
             else:                                       # ラベルなし
                 print("[UN LABELED]", wav)
                 pow = pow_spectrum(wav, 64)
-                un_labeled_pow.append(pow)
-                un_labeled_pow.insert(0, wav)
+                data = np.hstack((fname, pow))
+                un_labeled_pow.append(data)
                 cnt_un_labeled += 1
 
     # CSVで保存
