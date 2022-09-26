@@ -229,7 +229,7 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         for j in range(len(X1)):
             if list(X1_dat[0:]) == list(X1[j][1:]):       # BUG
 
-                print("pred:", pre_ans, "ans:", ans)        # TODO: ひとつの文字列にまとめる # pred:推定, ans:正解
+                print("pred:", pre_ans, "ans:", ans)      # TODO: ひとつの文字列にまとめる # pred:推定, ans:正解
 
                 # TODO: メタデータを検索して内容を表示
                 name = X1[j][0]
