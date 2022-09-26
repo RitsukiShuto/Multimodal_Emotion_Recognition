@@ -304,7 +304,6 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 
     plt.show()
 
-
 def main():
     # メタデータのディレクトリ
     meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)
