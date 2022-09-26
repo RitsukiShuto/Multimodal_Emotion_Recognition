@@ -12,3 +12,4 @@ model_loss.png
 history.csv
 train_log
 models
+test.py
