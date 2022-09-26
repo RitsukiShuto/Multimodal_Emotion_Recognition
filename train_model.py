@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 import random
 
+from re import split
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
@@ -123,7 +125,7 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
     X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
 
-    # DEBUG
+    # DEBUG:
     print("X1_train.shape:", X1_train.shape)        # 学習用モダリティ1(データ数, 入力次元数)
     print("X2_train.shape:", X2_train.shape)        # 学習用モダリティ2(データ数, 入力次元数)
     print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
@@ -154,12 +156,12 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
     # モデルを保存
-    now = datetime.datetime.now()                                                       # 現在時刻を取得 TODO: グローバル変数にしてもいいかも
+    now = datetime.datetime.now()                                                       # 現在時刻を取得    # TODO: グローバル変数にしてもいいかも
     MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
     x1_model = "models/x1/x1_model" + now.strftime('%Y%m%d_%H%M')
     x2_model = "models/x2/x2_model" + now.strftime('%Y%m%d_%H%M')
 
-    # 保存
+    # 学習済みモデルを保存
     multimodal_model.save(MM_model)
     x1_single_model.save(x1_model)
     x2_single_model.save(x2_model)
@@ -198,7 +200,7 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-# モデルの評価とログの保存
+# モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                    X1_test, X2_test, y_test, supervised_meta):
 
@@ -219,7 +221,7 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 
         if ans == pre_ans: continue
 
-        #print(X1_dat[0:5])     #DEBUG              # ベクトル化されたデータが表示される。
+        #print(X1_dat[0:5])     # DEBUG              # ベクトル化されたデータが表示される。
         #print(X2_dat[0:5])
 
         # メタデータから不正解のデータを探す
@@ -230,10 +232,27 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                 print("file name:", X1[j][0])
 
                 # TODO: メタデータを検索して内容を表示
+                name = X1[j][0]
+
+                # MEMO: 文字列を左から検索し、一番最初のアンダースコアで分割する。
+                # 文字列を左側から検索
+                idx = str.rfind(name, "_")
+                print(idx-1)            # idxがほしい文字列のインデックス
+
+                # 出現箇所で二分割
+                f_name = name[:idx]     # ファイル名
+                number = name[idx+1:]   # ファイル番号      # MEMO: DataFrameの型に合わせる
+
+                print("file name:", f_name, "\nindex:", number)     # DEBUG
 
                 # TODO: 不正解のリストを保存
 
-        # TODO: 精度を表示
+
+    # TODO: 単一モーダルのモデル用を追加する
+
+    # TODO: 3つのモデルを統合したレポートを出力する
+
+    # TODO: 精度を表示
         
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
