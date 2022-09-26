@@ -114,7 +114,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
     return multimodal_model
 
 # 教師あり学習
-def supervised_learning(X1, X2, y, supervised_meta):      # セットになったデータのみ学習
+def supervised_learning(X1, X2, y, meta_data):      # セットになったデータのみ学習
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
@@ -202,7 +202,7 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
 
 # モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
-                   X1_test, X2_test, y_test, supervised_meta):
+                   X1_test, X2_test, y_test, meta_data):
 
     X1_df = pd.read_csv("train_data/2div/POW_labeled.csv", header=0)
     X1 = X1_df.values.tolist()
@@ -225,19 +225,17 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         #print(X2_dat[0:5])
 
         # メタデータから不正解のデータを探す
+        # TODO: データフレームを生成する
         for j in range(len(X1)):
             if list(X1_dat[0:]) == list(X1[j][1:]):       # BUG
 
-                print("pred:", pre_ans, "ans:", ans)        # pred:推定, ans:正解
-                print("file name:", X1[j][0])
+                print("pred:", pre_ans, "ans:", ans)        # TODO: ひとつの文字列にまとめる # pred:推定, ans:正解
 
                 # TODO: メタデータを検索して内容を表示
                 name = X1[j][0]
 
-                # MEMO: 文字列を左から検索し、一番最初のアンダースコアで分割する。
-                # 文字列を左側から検索
-                idx = str.rfind(name, "_")
-                print(idx-1)            # idxがほしい文字列のインデックス
+                idx = str.rfind(name, "_")      #  文字列を左から検索
+                #print(idx-1)                    # idxがほしい文字列のインデックス
 
                 # 出現箇所で二分割
                 f_name = name[:idx]     # ファイル名
@@ -245,15 +243,18 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 
                 print("file name:", f_name, "\nindex:", number)     # DEBUG
 
-                # TODO: 不正解のリストを保存
+                for row in meta_data.values:
+                    if f_name == row[0] and int(number) == row[1]:
+                        print(row[5])
 
+                # TODO: 不正解のリストを保存
 
     # TODO: 単一モーダルのモデル用を追加する
 
     # TODO: 3つのモデルを統合したレポートを出力する
 
     # TODO: 精度を表示
-        
+    
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
@@ -411,7 +412,7 @@ def main():
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
 
         evaluate_model(multimodal_model, x1_single_model, x2_single_model,
-                        X1_test, X2_test, y_test, supervised_meta)
+                        X1_test, X2_test, y_test, meta_data)
 
     else:
         print("error")
