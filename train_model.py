@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 import random
 
+from re import split
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
@@ -23,6 +25,8 @@ from keras.utils.vis_utils import plot_model
 
 import tensorflow as tf
 from tensorflow import keras
+
+now = datetime.datetime.now()       # 現在時刻を取得
 
 # エンコーダ
 def X1_encoder(X1_dim):
@@ -112,7 +116,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
     return multimodal_model
 
 # 教師あり学習
-def supervised_learning(X1, X2, y, supervised_meta):      # セットになったデータのみ学習
+def supervised_learning(X1, X2, y, meta_data):      # セットになったデータのみ学習
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
@@ -123,7 +127,7 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
     X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
 
-    # DEBUG
+    # DEBUG:
     print("X1_train.shape:", X1_train.shape)        # 学習用モダリティ1(データ数, 入力次元数)
     print("X2_train.shape:", X2_train.shape)        # 学習用モダリティ2(データ数, 入力次元数)
     print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
@@ -143,7 +147,7 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # モデルの学習
-    epochs = 250        # 学習用パラメータ e=250, b=64
+    epochs = 1000        # 学習用パラメータ e=250, b=64
     batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
@@ -154,18 +158,17 @@ def supervised_learning(X1, X2, y, supervised_meta):      # セットになっ�
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
     # モデルを保存
-    now = datetime.datetime.now()                                                       # 現在時刻を取得 TODO: グローバル変数にしてもいいかも
     MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
     x1_model = "models/x1/x1_model" + now.strftime('%Y%m%d_%H%M')
     x2_model = "models/x2/x2_model" + now.strftime('%Y%m%d_%H%M')
 
-    # 保存
+    # 学習済みモデルを保存
     multimodal_model.save(MM_model)
     x1_single_model.save(x1_model)
     x2_single_model.save(x2_model)
 
     # モデルの評価
-    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, supervised_meta)
+    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
 
     # ログを保存
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
@@ -198,9 +201,9 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
     # モデル生成
     multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-# モデルの評価とログの保存
+# モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
-                   X1_test, X2_test, y_test, supervised_meta):
+                   X1_test, X2_test, y_test, meta_data):
 
     X1_df = pd.read_csv("train_data/2div/POW_labeled.csv", header=0)
     X1 = X1_df.values.tolist()
@@ -210,33 +213,54 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     score_X1 = x1_single_model.predict(X1_test)
     score_X2 = x2_single_model.predict(X2_test)
 
+    # 不正解ログ作成の準備
+    incorrect_ans_list = []
+    label = ['ACC', 'ANG', 'ANT', 'DIS', 'FEA', 'JOY', 'SAD', 'SUR']
+
     # 不正解のデータを抽出
     for i,v in enumerate(pred_MM):      # multimodal
         pre_ans = v.argmax()
         ans = y_test[i].argmax()
-        X1_dat = X1_test[i]
-        X2_dat = X2_test[i]
 
-        if ans == pre_ans: continue
+        if ans != pre_ans:
+            X1_dat = X1_test[i]
 
-        #print(X1_dat[0:5])     #DEBUG              # ベクトル化されたデータが表示される。
-        #print(X2_dat[0:5])
+            # メタデータから不正解のデータを探す
+            # TODO: データフレームで保存する
+            for j in range(len(X1)):
+                if list(X1_dat[0:]) == list(X1[j][1:]):
+                    # ラベルを数値から文字列に変更
+                    pre_label = label[pre_ans]
+                    ans_label = label[ans]
 
-        # メタデータから不正解のデータを探す
-        for j in range(len(X1)):
-            if list(X1_dat[0:]) == list(X1[j][1:]):       # BUG
+                    # ファイル名と連番を取得
+                    name = X1[j][0]
+                    idx = str.rfind(name, "_")
+                    f_name = name[:idx]             # ファイル名
+                    number = name[idx+1:]           # ファイル番号
 
-                print("pred:", pre_ans, "ans:", ans)        # pred:推定, ans:正解
-                print("file name:", X1[j][0])
+                    # メタデータから不正解の発話文字列を探す
+                    for row in meta_data.values:
+                        if f_name == row[0] and int(number) == row[1]:
+                            #不正解のリストを保存
+                            incorrect_meta = [f_name, number, pre_label, ans_label, row[5]]
+                            incorrect_ans_list.append(incorrect_meta)
 
-                # TODO: メタデータを検索して内容を表示
+    df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans', 'text'])
+    df = df.sort_values(by=["file name", "f_num"])
+    df.to_csv("incorrect_ans_list/incorrect_ans_list" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
-                # TODO: 不正解のリストを保存
+    print(df.head())
+
+    # TODO: 単一モーダルのモデル用を追加する
+
+    # TODO: 3つのモデルを統合したレポートを出力する
+
+    # TODO: 精度を表示
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
     # ログを保存
-    now = datetime.datetime.now()                                   # 現在時刻を取得
     file_name = now.strftime('%Y%m%d_%H%M')                         # 現在時刻を文字列として格納
 
     make_dir = "./train_log/" +  file_name
@@ -300,7 +324,6 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
     plt.savefig(make_dir + "/reslt_x2_graph" + file_name + '.png')
 
     plt.show()
-
 
 def main():
     # メタデータのディレクトリ
@@ -390,7 +413,7 @@ def main():
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
 
         evaluate_model(multimodal_model, x1_single_model, x2_single_model,
-                        X1_test, X2_test, y_test, supervised_meta)
+                        X1_test, X2_test, y_test, meta_data)
 
     else:
         print("error")
