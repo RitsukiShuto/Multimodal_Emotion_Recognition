@@ -26,6 +26,8 @@ from keras.utils.vis_utils import plot_model
 import tensorflow as tf
 from tensorflow import keras
 
+now = datetime.datetime.now()       # 現在時刻を取得
+
 # エンコーダ
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
@@ -156,7 +158,6 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
 
     # モデルを保存
-    now = datetime.datetime.now()                                                       # 現在時刻を取得    # TODO: グローバル変数にしてもいいかも
     MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
     x1_model = "models/x1/x1_model" + now.strftime('%Y%m%d_%H%M')
     x2_model = "models/x2/x2_model" + now.strftime('%Y%m%d_%H%M')
@@ -247,9 +248,9 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 
     df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans', 'text'])
     df = df.sort_values(by=["file name", "f_num"])
+    df.to_csv("incorrect_ans_list/incorrect_ans_list" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
     print(df.head())
-
 
     # TODO: 単一モーダルのモデル用を追加する
 
@@ -260,7 +261,6 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
     # ログを保存
-    now = datetime.datetime.now()                                   # 現在時刻を取得
     file_name = now.strftime('%Y%m%d_%H%M')                         # 現在時刻を文字列として格納
 
     make_dir = "./train_log/" +  file_name
