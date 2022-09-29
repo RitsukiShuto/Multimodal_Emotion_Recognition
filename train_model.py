@@ -145,7 +145,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # モデルの学習
-    epochs = 250        # 学習用パラメータ e=250, b=64
+    epochs = 1000        # 学習用パラメータ e=250, b=64
     batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
@@ -167,7 +167,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     x2_single_model.save(x2_model)
 
     # モデルの評価
-    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, supervised_meta)
+    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
 
     # ログを保存
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
@@ -212,49 +212,50 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     score_X1 = x1_single_model.predict(X1_test)
     score_X2 = x2_single_model.predict(X2_test)
 
+    # 不正解ログ作成の準備
+    incorrect_ans_list = []
+    label = ['ACC', 'ANG', 'ANT', 'DIS', 'FEA', 'JOY', 'SAD', 'SUR']
+
     # 不正解のデータを抽出
     for i,v in enumerate(pred_MM):      # multimodal
         pre_ans = v.argmax()
         ans = y_test[i].argmax()
-        X1_dat = X1_test[i]
-        X2_dat = X2_test[i]
 
-        if ans == pre_ans: continue
+        if ans != pre_ans:
+            X1_dat = X1_test[i]
 
-        #print(X1_dat[0:5])     # DEBUG              # ベクトル化されたデータが表示される。
-        #print(X2_dat[0:5])
+            # メタデータから不正解のデータを探す
+            # TODO: データフレームで保存する
+            for j in range(len(X1)):
+                if list(X1_dat[0:]) == list(X1[j][1:]):
+                    # ラベルを数値から文字列に変更
+                    pre_label = label[pre_ans]
+                    ans_label = label[ans]
 
-        # メタデータから不正解のデータを探す
-        # TODO: データフレームを生成する
-        for j in range(len(X1)):
-            if list(X1_dat[0:]) == list(X1[j][1:]):       # BUG
+                    # ファイル名と連番を取得
+                    name = X1[j][0]
+                    idx = str.rfind(name, "_")
+                    f_name = name[:idx]             # ファイル名
+                    number = name[idx+1:]           # ファイル番号
 
-                print("pred:", pre_ans, "ans:", ans)      # TODO: ひとつの文字列にまとめる # pred:推定, ans:正解
+                    # メタデータから不正解の発話文字列を探す
+                    for row in meta_data.values:
+                        if f_name == row[0] and int(number) == row[1]:
+                            #不正解のリストを保存
+                            incorrect_meta = [f_name, number, pre_label, ans_label, row[5]]
+                            incorrect_ans_list.append(incorrect_meta)
 
-                # TODO: メタデータを検索して内容を表示
-                name = X1[j][0]
+    df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans', 'text'])
+    df = df.sort_values(by=["file name", "f_num"])
 
-                idx = str.rfind(name, "_")      #  文字列を左から検索
-                #print(idx-1)                    # idxがほしい文字列のインデックス
+    print(df.head())
 
-                # 出現箇所で二分割
-                f_name = name[:idx]     # ファイル名
-                number = name[idx+1:]   # ファイル番号      # MEMO: DataFrameの型に合わせる
-
-                print("file name:", f_name, "\nindex:", number)     # DEBUG
-
-                for row in meta_data.values:
-                    if f_name == row[0] and int(number) == row[1]:
-                        print(row[5])
-
-                # TODO: 不正解のリストを保存
 
     # TODO: 単一モーダルのモデル用を追加する
 
     # TODO: 3つのモデルを統合したレポートを出力する
 
     # TODO: 精度を表示
-    
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
