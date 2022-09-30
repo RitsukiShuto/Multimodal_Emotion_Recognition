@@ -254,9 +254,7 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
 
     # TODO: 単一モーダルのモデル用を追加する
 
-    # TODO: 3つのモデルを統合したレポートを出力する
-
-    # TODO: 精度を表示
+    # TODO: 文字数をカウントする
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
