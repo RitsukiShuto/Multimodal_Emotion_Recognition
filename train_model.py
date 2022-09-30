@@ -222,11 +222,35 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         pre_ans = v.argmax()
         ans = y_test[i].argmax()
 
-        if ans != pre_ans:
+        if ans != pre_ans:      # 不正解
             X1_dat = X1_test[i]
 
             # メタデータから不正解のデータを探す
-            # TODO: データフレームで保存する
+            for j in range(len(X1)):
+                if list(X1_dat[0:]) == list(X1[j][1:]):
+                    # ラベルを数値から文字列に変更
+                    pre_label = label[pre_ans]
+                    ans_label = label[ans]
+
+                    # ファイル名と連番を取得
+                    name = X1[j][0]
+                    idx = str.rfind(name, "_")
+                    f_name = name[:idx]             # ファイル名
+                    number = name[idx+1:]           # ファイル番号
+
+                    # メタデータから不正解の発話文字列を探す
+                    for row in meta_data.values:
+                        if f_name == row[0] and int(number) == row[1]:
+                            # 不正解のリストを保存
+                            # TODO: 多数決の内容を追加する
+                            incorrect_meta = [f_name, number, pre_label, row[2], row[3], row[4], ans_label, row[5]]
+                            incorrect_ans_list.append(incorrect_meta)
+
+        else:                   # TODO: 正解のときの内容も保存する
+            # FIXME: 正解時用に修正する。
+            X1_dat = X1_test[i]
+
+            # メタデータから不正解のデータを探す
             for j in range(len(X1)):
                 if list(X1_dat[0:]) == list(X1[j][1:]):
                     # ラベルを数値から文字列に変更
@@ -246,9 +270,12 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                             incorrect_meta = [f_name, number, pre_label, ans_label, row[5]]
                             incorrect_ans_list.append(incorrect_meta)
 
-    df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans', 'text'])
+    # 不正解データの保存
+    df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
     df = df.sort_values(by=["file name", "f_num"])
     df.to_csv("incorrect_ans_list/incorrect_ans_list" + now.strftime('%Y%m%d_%H%M') + ".csv")
+
+    # TODO: 正解データ保存を実装
 
     print(df.head())
 
