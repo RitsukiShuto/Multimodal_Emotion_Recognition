@@ -213,8 +213,26 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     score_X1 = x1_single_model.predict(X1_test)
     score_X2 = x2_single_model.predict(X2_test)
 
+    # 精度を表示
+    MM_score = multimodal_model.evaluate(x=[X1_test, X2_test], y=y_test, verbose=0)
+    X1_score = x1_single_model.evaluate(X1_test, y_test, verbose=0)
+    X2_score = x2_single_model.evaluate(X2_test, y_test, verbose=0)
+
+    print("Multimodal score")
+    print("Test loss:", MM_score[0])
+    print("test accuracy:", MM_score[1], "\n")
+
+    print("X1 score")
+    print("Test loss:", X1_score[0])
+    print("test accuracy:", X1_score[1], "\n")
+
+    print("X2 score")
+    print("Test loss:", X2_score[0])
+    print("test accuracy:", X2_score[1], "\n")
+
     # 不正解ログ作成の準備
     incorrect_ans_list = []
+    correct_ans_list = []
     label = ['ACC', 'ANG', 'ANT', 'DIS', 'FEA', 'JOY', 'SAD', 'SUR']
 
     # 不正解のデータを抽出
@@ -223,11 +241,9 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         ans = y_test[i].argmax()
 
         if ans != pre_ans:      # 不正解
-            X1_dat = X1_test[i]
-
             # メタデータから不正解のデータを探す
             for j in range(len(X1)):
-                if list(X1_dat[0:]) == list(X1[j][1:]):
+                if list(X1_test[i][0:]) == list(X1[j][1:]):
                     # ラベルを数値から文字列に変更
                     pre_label = label[pre_ans]
                     ans_label = label[ans]
@@ -242,17 +258,13 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                     for row in meta_data.values:
                         if f_name == row[0] and int(number) == row[1]:
                             # 不正解のリストを保存
-                            # TODO: 多数決の内容を追加する
-                            incorrect_meta = [f_name, number, pre_label, row[2], row[3], row[4], ans_label, row[5]]
+                            incorrect_meta = [f_name, number, pre_label, row[6], row[7], row[8], ans_label, row[5]]
                             incorrect_ans_list.append(incorrect_meta)
 
-        else:                   # TODO: 正解のときの内容も保存する
-            # FIXME: 正解時用に修正する。
-            X1_dat = X1_test[i]
-
+        else:                   # 正解
             # メタデータから不正解のデータを探す
             for j in range(len(X1)):
-                if list(X1_dat[0:]) == list(X1[j][1:]):
+                if list(X1_test[i][0:]) == list(X1[j][1:]):
                     # ラベルを数値から文字列に変更
                     pre_label = label[pre_ans]
                     ans_label = label[ans]
@@ -267,21 +279,27 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                     for row in meta_data.values:
                         if f_name == row[0] and int(number) == row[1]:
                             #不正解のリストを保存
-                            incorrect_meta = [f_name, number, pre_label, ans_label, row[5]]
-                            incorrect_ans_list.append(incorrect_meta)
+                            correct_meta = [f_name, number, pre_label, row[6], row[7], row[8], ans_label, row[5]]
+                            correct_ans_list.append(correct_meta)
 
     # 不正解データの保存
-    df = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
-    df = df.sort_values(by=["file name", "f_num"])
-    df.to_csv("incorrect_ans_list/incorrect_ans_list" + now.strftime('%Y%m%d_%H%M') + ".csv")
+    df1 = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
+    df1 = df1.sort_values(by=["file name", "f_num"])
+    df1.to_csv("incorrect_ans_list/incorrect_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
-    # TODO: 正解データ保存を実装
+    # 正解データの保存
+    df2 = pd.DataFrame(correct_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
+    df2 = df2.sort_values(by=["file name", "f_num"])
+    df2.to_csv("incorrect_ans_list/correct_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
-    print(df.head())
+    print(df1.head(), "\n")       # DEBUG
+    print(df2.head())
 
     # TODO: 単一モーダルのモデル用を追加する
 
-    # TODO: 文字数をカウントする
+    # TODO: 文字数をカウントする --> Excelでやった
+
+    # TODO: 各ラベルの確率で出力する
 
 def save_log(multimodal_model, x1_single_model, x2_single_model,
              multimodal_fit, x1_fit, x2_fit):
