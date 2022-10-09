@@ -32,12 +32,12 @@ now = datetime.datetime.now()       # 現在時刻を取得
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(None, X1_dim), name='input_X1')
-    hidden = Dense(256, activation='relu')(input_X1)
-    #hidden = Dense(32, activation='relu')(hidden)
-    hidden = Dense(128, activation='relu')(hidden)
-    #hidden = Dense(16, activation='relu')(hidden)
-    #hidden = Dense(10, activation='relu')(hidden)
-    z1 = Dense(64, activation='relu')(hidden)
+    hidden = Dense(32, activation='relu')(input_X1)
+    hidden = Dense(32, activation='relu')(hidden)
+    #hidden = Dense(128, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(hidden)
+    z1 = Dense(10, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -51,12 +51,12 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(256, activation='relu')(input_X2)
-    #hidden = Dense(256, activation='relu')(hidden)
-    hidden = Dense(128, activation='relu')(hidden)
+    hidden = Dense(32, activation='relu')(input_X2)
+    hidden = Dense(32, activation='relu')(hidden)
     #hidden = Dense(128, activation='relu')(hidden)
-    #hidden = Dense(64, activation='relu')(hidden)
-    z2 = Dense(64, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(hidden)
+    z2 = Dense(10, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
 
@@ -102,10 +102,10 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(36, activation='relu', name='classification_1')(concat)     # concat or maxpooling
-    #classification = Dense(36, activation='relu', name='classification_2')(classification_input)
-    #classification = Dense(18, activation='relu', name='classification_3')(classification)
-    classification = Dense(18, activation='relu', name='classification_4')(classification)
+    classification = Dense(20, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+    classification = Dense(15, activation='relu', name='classification_2')(classification)
+    classification = Dense(10, activation='relu', name='classification_3')(classification)
+    classification = Dense(10, activation='relu', name='classification_4')(classification)
 
     # 出力層
     classification_output = Dropout(0.5)(classification)
@@ -118,7 +118,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
 # 教師あり学習
 def supervised_learning(X1, X2, y, meta_data):      # セットになったデータのみ学習
     # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.15, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
 
     # モデルを定義
@@ -148,7 +148,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
 
     # モデルの学習
     epochs = 1000        # 学習用パラメータ e=250, b=64
-    batch_size = 64
+    batch_size = 8
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           batch_size=batch_size, epochs=epochs)
@@ -205,7 +205,7 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                    X1_test, X2_test, y_test, meta_data):
 
-    X1_df = pd.read_csv("train_data/2div/POW_labeled.csv", header=0)
+    X1_df = pd.read_csv("train_data/OGVC_vol2/POW_lv0.csv", header=0)
     X1 = X1_df.values.tolist()
 
     # テストデータで推定する
@@ -370,7 +370,9 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 
 def main():
     # メタデータのディレクトリ
-    meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)
+    # CAUTION: 使用するメタデータを変更する
+    #meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)  # INFO: OGVC_vol.1
+    meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
     supervised_meta = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
     # ラベルの読み込み
@@ -382,8 +384,13 @@ def main():
     label_list = pd.DataFrame(encoded, columns=label, dtype=np.int8)
     
     # 教師ありデータの読み込み
-    sound_labeled_X1 = pd.read_csv("train_data/2div/POW_labeled.csv", header=0, index_col=0)
-    tfidf_labeled_X2 = pd.read_csv("train_data/2div/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
+    # INFO: OGVC_vol.1
+    #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0, index_col=0)
+    #tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
+
+    # INFO OGVC_vol.2
+    sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_lv3.csv", header=0, index_col=0)
+    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol2/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
 
     X1 = sound_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
     X2 = tfidf_labeled_X2.to_numpy()
