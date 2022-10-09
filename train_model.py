@@ -282,6 +282,7 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                             correct_meta = [f_name, number, pre_label, row[6], row[7], row[8], ans_label, row[5]]
                             correct_ans_list.append(correct_meta)
 
+    # FIXME: OGVC_vol.2に対応する
     # 不正解データの保存
     df1 = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
     df1 = df1.sort_values(by=["file name", "f_num"])
