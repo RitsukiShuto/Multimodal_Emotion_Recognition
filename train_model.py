@@ -118,7 +118,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
 # 教師あり学習
 def supervised_learning(X1, X2, y, meta_data):      # セットになったデータのみ学習
     # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.15, random_state=0)
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
     #X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
 
     # モデルを定義
@@ -147,7 +147,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # モデルの学習
-    epochs = 1000        # 学習用パラメータ e=250, b=64
+    epochs = 250        # 学習用パラメータ e=250, b=64
     batch_size = 8
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
@@ -372,8 +372,8 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
-    #meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)  # INFO: OGVC_vol.1
-    meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
+    meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)  # INFO: OGVC_vol.1
+    #meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
     supervised_meta = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
     # ラベルの読み込み
@@ -386,12 +386,12 @@ def main():
     
     # 教師ありデータの読み込み
     # INFO: OGVC_vol.1
-    #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0, index_col=0)
-    #tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
+    sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0, index_col=0)
+    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
 
     # INFO OGVC_vol.2
-    sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_lv3.csv", header=0, index_col=0)
-    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol2/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
+    #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_all.csv", header=0, index_col=0)
+    #tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol2/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
 
     X1 = sound_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
     X2 = tfidf_labeled_X2.to_numpy()
@@ -456,9 +456,9 @@ def main():
     elif mode == "2":
         # モデルを読み込む
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20220924_1715")
-        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20220924_1715")
-        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20220924_1715")
+        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221010_1606")
+        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221010_1606")
+        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221010_1606")
 
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
