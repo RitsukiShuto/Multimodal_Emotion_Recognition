@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
+from gc import callbacks
 from secrets import choice
 
 import matplotlib.pyplot as plt
@@ -20,8 +21,9 @@ from keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
 from keras.models import save_model, load_model, Sequential
-from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D, Conv1D
+from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten
 from keras.utils.vis_utils import plot_model
+from keras.callbacks import EarlyStopping
 
 import tensorflow as tf
 from tensorflow import keras
@@ -31,18 +33,21 @@ now = datetime.datetime.now()       # 現在時刻を取得
 # エンコーダ
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
-    input_X1 = Input(shape=(None, X1_dim), name='input_X1')
-    hidden = Dense(32, activation='relu')(input_X1)
-    hidden = Dense(32, activation='relu')(hidden)
-    #hidden = Dense(128, activation='relu')(hidden)
-    hidden = Dense(16, activation='relu')(hidden)
-    hidden = Dense(16, activation='relu')(hidden)
-    z1 = Dense(10, activation='relu')(hidden)
+    input_X1 = Input(shape=(X1_dim, 1), name="input_X1")
 
-    # TODO: デコーダ用の層を作成する
+    hidden = Conv1D(32, 2, padding='same', activation='relu')(input_X1)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(16, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    z1 = Flatten()(hidden)
 
     # 単一モダリティでの分類用のネットワーク
-    c_x1 = Dropout(0.5)(hidden)
+    c_x1 = Dropout(0.5)(z1)
     c_x1 = Dense(8, activation='softmax')(c_x1)
     x1_single_model = Model(input_X1, c_x1)
     
@@ -50,24 +55,35 @@ def X1_encoder(X1_dim):
 
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
-    input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(300, activation='relu')(input_X2)
-    hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(70, activation='relu')(hidden)
-    hidden = Dense(70, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(30, activation='relu')(hidden)
-    hidden = Dense(15, activation='relu')(hidden)    
-    z2 = Dense(10, activation='relu')(hidden)
+    input_X2 = Input(shape=(X2_dim, 1), name='input_X2')
+
+    hidden = Conv1D(500, 2, padding='same', activation='relu')(input_X2)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(500, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(200, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(100, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(50, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(30, 2, padding='same', activation='relu')(hidden)
+    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+
+    z2 = Flatten()(hidden)
 
     # TODO: デコーダ用の層を作成する
 
     # 単一モダリティでの分類用のネットワーク
-    c_x2 = Dropout(0.5)(hidden)
+    c_x2 = Dropout(0.5)(z2)
     c_x2 = Dense(8, activation='softmax')(c_x2)
     x2_single_model = Model(input_X2, c_x2)
 
@@ -155,14 +171,30 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
 
     # モデルの学習
     epochs = 250        # 学習用パラメータ e=250, b=64
-    batch_size = 2
+    batch_size = 64
 
-    multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
-                                          batch_size=batch_size, epochs=epochs)
+    early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
 
-    x1_fit = x1_single_model.fit(x=X1_train, y=y_train, batch_size = batch_size, epochs=epochs)
+    multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train],
+                                          y=y_train,
+                                          validation_split=0.2,
+                                          batch_size=batch_size,
+                                          epochs=epochs,
+                                          callbacks=[early_stopping])
 
-    x2_fit = x2_single_model.fit(x=X2_train, y=y_train, batch_size = batch_size, epochs=epochs)
+    x1_fit = x1_single_model.fit(x=X1_train,
+                                 y=y_train,
+                                 validation_split=0.2,
+                                 batch_size = batch_size,
+                                 epochs=epochs,
+                                 callbacks=[early_stopping])
+
+    x2_fit = x2_single_model.fit(x=X2_train,
+                                 y=y_train,
+                                 validation_split=0.2,
+                                 batch_size = batch_size,
+                                 epochs=epochs,
+                                 callbacks=[early_stopping])
 
     # モデルを保存
     MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
