@@ -19,8 +19,8 @@ from sklearn.metrics import classification_report
 from keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
-from keras.models import save_model, load_model
-from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D
+from keras.models import save_model, load_model, Sequential
+from keras.layers import Dense, Dropout, Concatenate, MaxPooling1D, Conv1D
 from keras.utils.vis_utils import plot_model
 
 import tensorflow as tf
@@ -51,11 +51,17 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(None, X2_dim), name='input_X2')
-    hidden = Dense(32, activation='relu')(input_X2)
-    hidden = Dense(32, activation='relu')(hidden)
-    #hidden = Dense(128, activation='relu')(hidden)
-    hidden = Dense(16, activation='relu')(hidden)
-    hidden = Dense(16, activation='relu')(hidden)
+    hidden = Dense(300, activation='relu')(input_X2)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(70, activation='relu')(hidden)
+    hidden = Dense(70, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(hidden)
+    hidden = Dense(15, activation='relu')(hidden)    
     z2 = Dense(10, activation='relu')(hidden)
 
     # TODO: デコーダ用の層を作成する
@@ -102,10 +108,12 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(20, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+    classification = Dense(20, activation='relu', name='classification_1')(maxpooling)     # concat or maxpooling
     classification = Dense(15, activation='relu', name='classification_2')(classification)
-    classification = Dense(10, activation='relu', name='classification_3')(classification)
-    classification = Dense(10, activation='relu', name='classification_4')(classification)
+    classification = Dense(15, activation='relu', name='classification_3')(classification)
+    classification = Dense(15, activation='relu', name='classification_4')(classification)
+    classification = Dense(10, activation='relu', name='classification_5')(classification)
+    classification = Dense(10, activation='relu', name='classification_6')(classification)
 
     # 出力層
     classification_output = Dropout(0.5)(classification)
@@ -148,7 +156,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
 
     # モデルの学習
     epochs = 250        # 学習用パラメータ e=250, b=64
-    batch_size = 8
+    batch_size = 64
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           batch_size=batch_size, epochs=epochs)
@@ -205,7 +213,7 @@ def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべての�
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                    X1_test, X2_test, y_test, meta_data):
 
-    X1_df = pd.read_csv("train_data/OGVC_vol2/POW_lv0.csv", header=0)
+    X1_df = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0)
     X1 = X1_df.values.tolist()
 
     # テストデータで推定する
@@ -372,7 +380,7 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
-    meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)  # INFO: OGVC_vol.1
+    meta_data = pd.read_csv("train_data/meta_data/LEN7_meta.csv", header=0)  # INFO: OGVC_vol.1
     #meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
     supervised_meta = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
@@ -387,7 +395,7 @@ def main():
     # 教師ありデータの読み込み
     # INFO: OGVC_vol.1
     sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0, index_col=0)
-    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled_PCA.csv", header=0, index_col=0)
+    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled.csv", header=0, index_col=0)
 
     # INFO OGVC_vol.2
     #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_all.csv", header=0, index_col=0)
@@ -400,10 +408,10 @@ def main():
     # データを標準化
     x_mean = X1.mean(keepdims=True)
     x_std = X1.std(keepdims=True)
-    #X1 = (X1 - x_mean)/(x_std)
+    X1 = (X1 - x_mean)/(x_std)
 
-    x_min = X2.min(keepdims=True)
-    x_max = X2.max(keepdims=True)
+    #x_min = X2.min(keepdims=True)
+    #x_max = X2.max(keepdims=True)
     #X2 = (X2 - x_min)/(x_max - x_min) 
 
     # モードを選択
@@ -417,6 +425,9 @@ def main():
         print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
         print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
         print("label data\n", label_list.head(), "\n")
+
+        print(X1)
+        print(X2)
 
         # 教師あり学習を実行
         supervised_learning(X1, X2, y, supervised_meta)
@@ -456,9 +467,9 @@ def main():
     elif mode == "2":
         # モデルを読み込む
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221010_1606")
-        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221010_1606")
-        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221010_1606")
+        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221015_1246")
+        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221015_1246")
+        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221015_1246")
 
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
