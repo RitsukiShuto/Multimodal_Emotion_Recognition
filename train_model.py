@@ -104,11 +104,10 @@ def X2_decoder(X2_dim):
 def classification_layer(input_X1, input_X2, z1, z2):
     # 特徴量を合成
     # TODO: MaxPooling実装したい
-
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(20, activation='relu', name='classification_1')(maxpooling)     # concat or maxpooling
+    classification = Dense(20, activation='relu', name='classification_1')(concat)     # concat or maxpooling
     classification = Dense(15, activation='relu', name='classification_2')(classification)
     classification = Dense(15, activation='relu', name='classification_3')(classification)
     classification = Dense(15, activation='relu', name='classification_4')(classification)
@@ -156,7 +155,7 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
 
     # モデルの学習
     epochs = 250        # 学習用パラメータ e=250, b=64
-    batch_size = 64
+    batch_size = 2
 
     multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train], y=y_train,
                                           batch_size=batch_size, epochs=epochs)
