@@ -10,7 +10,6 @@ import csv
 import pandas as pd
 import numpy as np
 
-
 def TF_IDF(docs):
     # csvを読み込む
     text = open(docs, "r", encoding="utf-8", errors="", newline="")       # TODO: 変更せよ
@@ -48,30 +47,27 @@ def split_data(x):
     cnt_labeled_data = 0
     cnt_un_labeled_data = 0
 
-    meta_data = pd.read_csv("../data/supervised_list.csv", header=0)
+    meta_data = pd.read_csv("../data/OGVC_Vol2_supervised.csv", header=0)
 
     i = 0
     for row in meta_data.values:
         #print(row[9], speech[0:4], i, "/8365")
-        if row[5] != "{笑}":
+        if pd.isnull(row[2]):
+            print("[UN LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
+            TF_IDF_un_labeled.append(x[i][0:])
+            cnt_un_labeled_data += 1
 
-            if pd.isnull(row[9]):
-                print("[UN LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
-                TF_IDF_un_labeled.append(x[i][0:])
-                cnt_un_labeled_data += 1
+        else:
+            print("[LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
+            TF_IDF_labeled.append(x[i][0:])
+            cnt_labeled_data += 1
 
-            else:
-                print("[LABELED]{}/8365\n{}\n".format(i+1, x[i][0:6]))
-                TF_IDF_labeled.append(x[i][0:])
-                cnt_labeled_data += 1
-
-            i += 1
+        i += 1
 
     df1 = pd.DataFrame(TF_IDF_labeled)
-    df2 = pd.DataFrame(TF_IDF_un_labeled)
     
-    df1.to_csv("../train_data/2div/TF-IDF_labeled_PCA.csv", index=True, header=1)
-    df2.to_csv("../train_data/2div/TF-IDF_un_labeled_PCA.csv", index=True, header=1)
+    df1.to_csv("../train_data/OGVC_vol2/TF-IDF_labeled_PCA.csv", index=True, header=1)
+    
 
     print("data = {}".format(cnt_un_labeled_data + cnt_labeled_data))
     print("labeled_data = {}".format(cnt_labeled_data))
@@ -79,7 +75,7 @@ def split_data(x):
 
 
 def main():
-    docs = "../data/wakachi/2div/wakati.txt"
+    docs = "../data/wakachi/OGVC_vol2/wakati_OGVC2.txt"
 
     X = TF_IDF(docs)
     x = _PCA(X)

@@ -30,45 +30,22 @@ def wakatigaki(sentence):
 
 
 def main():
-    cnt_un_labeled = 0
-    cnt_labeled = 0
 
-    labeled_wakati = []         # 分かち書き後の文章を格納する変数
-    un_labeled_wakati = []
+    wakati_list = []         # 分かち書き後の文章を格納する変数
 
     # csvを読み込む
     df = pd.read_csv('../data/OGVC2_metadata.csv', encoding='utf-8', header=0)
 
     # 分かち書きを行う発話を選定し、必要な処理を行う
     for row in df.values:
-        sentence = str(row[5])
-
-        if pd.isnull(row[9]):      # ラベルなし
-            if row[5] != "{笑}":   # '声喩'のみの発話はスキップ
-                print("[run wakatigaki()] UN LABELED", "\t\t", sentence)
-                wakati = wakatigaki(sentence)
-                un_labeled_wakati.append(wakati)
-                cnt_un_labeled += 1
-            else:
-                print("[skip]", "\t\t\t\t\t", sentence, "\n")
-
-        else:                      # 'emotion'ラベルあり
-            print("[run wakatigaki()] LABELED", "\t", sentence)
-            wakati = wakatigaki(sentence)
-            labeled_wakati.append(wakati)
-            cnt_labeled += 1
+        sentence = str(row[4])                  # 'emotion'ラベルあり
+        print("[run wakatigaki()] LABELED", "\t", sentence)
+        wakati = wakatigaki(sentence)
+        wakati_list.append(wakati)
 
     # CSVを保存
-    df_un_wakati = pd.DataFrame(un_labeled_wakati)
-    df_un_wakati.to_csv("../data/wakachi/2div/un_labeled_wakati.txt", index=False)
-
-    df_labeled_wakati = pd.DataFrame(labeled_wakati)
-    df_labeled_wakati.to_csv("../data/wakachi/2div/labeled_wakati.txt", index=False)
-
-    # 処理したデータ数を表示
-    print("data=", cnt_un_labeled + cnt_labeled)
-    print("un labeled=", cnt_un_labeled)
-    print("labeled=", cnt_labeled)
+    df_labeled_wakati = pd.DataFrame(wakati_list)
+    df_labeled_wakati.to_csv("../data/wakachi/OGVC_vol2/wakati_OGVC2.txt", index=False)
 
 if __name__ == '__main__':
     main()
