@@ -1,9 +1,6 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
-from gc import callbacks
-from secrets import choice
-
 import matplotlib.pyplot as plt
 import datetime
 import os
@@ -20,13 +17,9 @@ from sklearn.metrics import classification_report
 from keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
-from keras.models import save_model, load_model, Sequential
-from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten
+from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten, Add
 from keras.utils.vis_utils import plot_model
 from keras.callbacks import EarlyStopping
-
-import tensorflow as tf
-from tensorflow import keras
 
 now = datetime.datetime.now()       # 現在時刻を取得
 
@@ -35,11 +28,9 @@ def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(X1_dim, 1), name="input_X1")
 
-    hidden = Conv1D(32, 2, padding='same', activation='relu')(input_X1)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(16, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+    hidden = Dense(30, activation='relu')(input_X1)
+    hidden = Dense(15, activation='relu')(hidden)
+    hidden = Dense(15, activation='relu')(hidden)
 
     hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
@@ -57,25 +48,12 @@ def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(X2_dim, 1), name='input_X2')
 
-    hidden = Conv1D(500, 2, padding='same', activation='relu')(input_X2)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
+    hidden = Dense(500, activation='relu')(input_X2)
+    hidden = Dense(250, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
 
-    hidden = Conv1D(500, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(200, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(100, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(50, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(30, 2, padding='same', activation='relu')(hidden)
-    #hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
-
-    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    hidden = Conv1D(8, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
 
     z2 = Flatten()(hidden)
@@ -89,33 +67,6 @@ def X2_encoder(X2_dim):
 
     return input_X2, z2, x2_single_model
 
-# デコーダ
-def X1_decoder(X1_dim):
-    # モダリティ1の復元
-    dec_input_X1 = Input(batch_shape=(None, X1_dim))
-    hidden = Dense(16, activation='relu')(dec_input_X1)
-    hidden = Dense(32, activation='relu')(hidden)
-    hidden = Dense(64, activation='relu')(hidden)
-    hidden = Dense(128, activation='relu')(hidden)
-    hidden = Dense(256, activation='relu')(hidden)
-    dec_output_X1 = Dense(533, activation='relu')(hidden)
-
-    dec_X1 = Model(dec_input_X1, dec_output_X1)
-
-    return dec_X1
-
-def X2_decoder(X2_dim):
-    # モダリティ2の復元
-    dec_input_X2 = Input(batch_shape=(None, X2_dim))
-    hidden = Dense(16, activation='relu')(dec_input_X2)
-    hidden = Dense(32, activation='relu')(hidden)
-    hidden = Dense(64, activation='relu')(hidden)
-    dec_output_X2 = Dense(128, activation='relu')(hidden)
-
-    dec_X2 = Model(dec_input_X2, dec_output_X2)
-
-    return dec_X2
-
 # 分類層
 def classification_layer(input_X1, input_X2, z1, z2):
     # 特徴量を合成
@@ -124,11 +75,14 @@ def classification_layer(input_X1, input_X2, z1, z2):
 
     # 分類層
     classification = Dense(20, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+
     classification = Dense(15, activation='relu', name='classification_2')(classification)
     classification = Dense(15, activation='relu', name='classification_3')(classification)
-    classification = Dense(15, activation='relu', name='classification_4')(classification)
-    classification = Dense(10, activation='relu', name='classification_5')(classification)
-    classification = Dense(10, activation='relu', name='classification_6')(classification)
+
+    classification = Dense(10, activation='relu', name='classification_4')(classification)
+    #classification = MaxPool1D(pool_size=4, padding='same')(classification)
+
+    #classification = Flatten()(classification)
 
     # 出力層
     classification_output = Dropout(0.5)(classification)
@@ -180,21 +134,24 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
                                           validation_split=0.2,
                                           batch_size=batch_size,
                                           epochs=epochs,
-                                          callbacks=[early_stopping])
+                                          callbacks=[early_stopping]
+                                          )
 
     x1_fit = x1_single_model.fit(x=X1_train,
                                  y=y_train,
                                  validation_split=0.2,
                                  batch_size = batch_size,
                                  epochs=epochs,
-                                 callbacks=[early_stopping])
+                                 callbacks=[early_stopping]
+                                 )
 
     x2_fit = x2_single_model.fit(x=X2_train,
                                  y=y_train,
                                  validation_split=0.2,
                                  batch_size = batch_size,
                                  epochs=epochs,
-                                 callbacks=[early_stopping])
+                                 callbacks=[early_stopping]
+                                 )
 
     # モデルを保存
     MM_model = "models/multimodal/multimodal_model" + now.strftime('%Y%m%d_%H%M')       # ファイル名を生成
@@ -257,14 +214,18 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     X1_score = x1_single_model.evaluate(X1_test, y_test, verbose=0)
     X2_score = x2_single_model.evaluate(X2_test, y_test, verbose=0)
 
+    multimodal_model.summary()
     print("Multimodal score")
     print("Test loss:", MM_score[0])
     print("test accuracy:", MM_score[1], "\n")
 
+
+    x1_single_model.summary()
     print("X1 score")
     print("Test loss:", X1_score[0])
     print("test accuracy:", X1_score[1], "\n")
 
+    x2_single_model.summary()
     print("X2 score")
     print("Test loss:", X2_score[0])
     print("test accuracy:", X2_score[1], "\n")
@@ -279,6 +240,8 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
         pre_ans = v.argmax()
         ans = y_test[i].argmax()
 
+        # BUG: ログが保存されない
+        # インデックスがおかしいかも
         if ans != pre_ans:      # 不正解
             # メタデータから不正解のデータを探す
             for j in range(len(X1)):
@@ -325,19 +288,17 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     # 不正解データの保存
     df1 = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
     df1 = df1.sort_values(by=["file name", "f_num"])
-    df1.to_csv("incorrect_ans_list/incorrect_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
+    df1.to_csv("predict_list/incorrect_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
     # 正解データの保存
     df2 = pd.DataFrame(correct_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
     df2 = df2.sort_values(by=["file name", "f_num"])
-    df2.to_csv("incorrect_ans_list/correct_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
+    df2.to_csv("predict_log/correct_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
     print(df1.head(), "\n")       # DEBUG
     print(df2.head())
 
     # TODO: 単一モーダルのモデル用を追加する
-
-    # TODO: 文字数をカウントする --> Excelでやった
 
     # TODO: 各ラベルの確率で出力する
 
@@ -437,9 +398,9 @@ def main():
     y = label_list.to_numpy()
 
     # データを標準化
-    x_mean = X1.mean(keepdims=True)
-    x_std = X1.std(keepdims=True)
-    X1 = (X1 - x_mean)/(x_std)
+    #x_mean = X1.mean(keepdims=True)
+    #x_std = X1.std(keepdims=True)
+    #X1 = (X1 - x_mean)/(x_std)
 
     #x_min = X2.min(keepdims=True)
     #x_max = X2.max(keepdims=True)
