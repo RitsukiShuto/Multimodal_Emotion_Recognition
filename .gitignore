@@ -13,4 +13,4 @@ history.csv
 train_log
 models
 test.py
-incorrect_ans_list
+predict_log
