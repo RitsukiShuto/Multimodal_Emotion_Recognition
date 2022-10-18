@@ -1,7 +1,6 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
-from symbol import tfpdef
 import matplotlib.pyplot as plt
 import datetime
 import os
@@ -15,14 +14,14 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
+import tensorflow as tf
+from tensorflow import keras
 from keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from keras.losses import categorical_crossentropy
 from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten, Add
 from keras.utils.vis_utils import plot_model
 from keras.callbacks import EarlyStopping
-
-from tensorflow.keras.model import load_model
 
 now = datetime.datetime.now()       # 現在時刻を取得
 
@@ -187,8 +186,8 @@ def semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_da
     print("semi supervised learning")       # DEBUG
 
     # TODO: ラベルなしデータを読み込む
-    sound_un_labeled_X1 = pd.read_csv("train_data/2div/POW_un_labeled.csv", header=0, index_col=0)
-    tfidf_un_labeled_X2 = pd.read_csv("train_data/2div/TF-IDF_un_labeled_PCA.csv", header=0, index_col=0)
+    sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
 
     # 教師ありデータを表示
     #print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
@@ -205,7 +204,28 @@ def semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_da
     un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
     un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
 
+    #print(un_X1)
+
+    #class_names = ['ACC', 'ANG', 'ANT', 'DIS', 'FEA', 'JOY', 'SAD', 'SUR']
+    #temp_label = (int)0~7
+
     # TODO: 疑似ラベルの生成
+    # MEMO: 100件程度のデータを推定して信頼度の高いデータを教師ありデータとして扱う。
+    # un_X1.shape[0] / 30 --> データ数 / ループさせたい回数???
+
+    data_cnt = un_X1.shape[0]
+    loop_times = int(data_cnt / 30)
+    start = 0           # [start:end: --> 推定するデータの範囲
+    end = 0 + loop_times
+
+    batchsize = 64
+    
+    for i in range(data_cnt):
+        MM_encoded = multimodal_model.predict(x=[un_X1[i:i+1][0:], un_X2[i:i+1][0:]], batch_size=batchsize)
+        print(np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+
+        #start = end
+
 
 
 # モデルの評価
@@ -299,7 +319,7 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     # 不正解データの保存
     df1 = pd.DataFrame(incorrect_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
     df1 = df1.sort_values(by=["file name", "f_num"])
-    df1.to_csv("predict_list/incorrect_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
+    df1.to_csv("predict_log/incorrect_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
     # 正解データの保存
     df2 = pd.DataFrame(correct_ans_list, columns = ['file name', 'f_num', 'pred', 'ans1', 'ans2', 'ans3', 'emotion', 'text'])
@@ -438,9 +458,9 @@ def main():
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = load_model("models/multimodal/multimodal_model20221015_1246")
-        x1_single_model =  load_model("models/x1/x1_model20221015_1246")
-        x2_single_model =  load_model("models/x2/x2_model20221015_1246")
+        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221018_1708")
+        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221015_1246")
+        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221015_1246")
 
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
@@ -450,9 +470,9 @@ def main():
     elif mode == "2":
         # モデルを読み込む
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = load_model("models/multimodal/multimodal_model20221015_1246")
-        x1_single_model =  load_model("models/x1/x1_model20221015_1246")
-        x2_single_model =  load_model("models/x2/x2_model20221015_1246")
+        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221015_1246")
+        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221015_1246")
+        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221015_1246")
 
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
