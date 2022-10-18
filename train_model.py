@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
+from symbol import tfpdef
 import matplotlib.pyplot as plt
 import datetime
 import os
@@ -20,6 +21,8 @@ from keras.losses import categorical_crossentropy
 from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten, Add
 from keras.utils.vis_utils import plot_model
 from keras.callbacks import EarlyStopping
+
+from tensorflow.keras.model import load_model
 
 now = datetime.datetime.now()       # 現在時刻を取得
 
@@ -123,13 +126,15 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
 
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    # モデルの学習
-    epochs = 250        # 学習用パラメータ e=250, b=64
+    # epochsとbatch_size
+    epochs = 250        # 学習用パラメータ(デフォルトはe=250, b=64)
     batch_size = 64
+
 
     early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
 
-    multimodal_fit = multimodal_model.fit(x=[X1_train, X2_train],
+    multimodal_fit = multimodal_model.fit(
+                                          x=[X1_train, X2_train],
                                           y=y_train,
                                           validation_split=0.2,
                                           batch_size=batch_size,
@@ -137,7 +142,8 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
                                           callbacks=[early_stopping]
                                           )
 
-    x1_fit = x1_single_model.fit(x=X1_train,
+    x1_fit = x1_single_model.fit(
+                                 x=X1_train,
                                  y=y_train,
                                  validation_split=0.2,
                                  batch_size = batch_size,
@@ -145,7 +151,8 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
                                  callbacks=[early_stopping]
                                  )
 
-    x2_fit = x2_single_model.fit(x=X2_train,
+    x2_fit = x2_single_model.fit(
+                                 x=X2_train,
                                  y=y_train,
                                  validation_split=0.2,
                                  batch_size = batch_size,
@@ -169,33 +176,37 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     # ログを保存
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
 
+    # 続けて半教師あり学習を行うか判断
+    flag = input("semi supervised(y/n):")
+
+    if flag == 'y' or flag == 'Y':
+        semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data)
+
 # 半教師あり学習
-def semi_supervised_learning(X1, X2, un_X1, un_X2, y):          # すべてのデータで学習
-    # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
-    X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.2, random_state=0)
+def semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data):          # すべてのデータで学習
+    print("semi supervised learning")       # DEBUG
 
+    # TODO: ラベルなしデータを読み込む
+    sound_un_labeled_X1 = pd.read_csv("train_data/2div/POW_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/2div/TF-IDF_un_labeled_PCA.csv", header=0, index_col=0)
 
-    # モデルを定義
-    # 各種パラメータを決定
-    length = len(X1_train)          # 学習データの数
-    X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
-    X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
+    # 教師ありデータを表示
+    #print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
+    #print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
 
-    # DEBUG
-    print("X1_train.shape:", X1_train.shape)        # 学習用モダリティ1(データ数, 入力次元数)
-    print("X2_train.shape:", X2_train.shape)        # 学習用モダリティ2(データ数, 入力次元数)
-    print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
+    # 教師なしデータを表示
+    print("\nun supervised sound data\n", sound_un_labeled_X1.head(), "\n")
+    print("un supervised tfidf data\n", tfidf_un_labeled_X2.head(), "\n")
 
-    # 特徴量抽出層
-    input_X1, z1 = X1_encoder(X1_dim)
-    input_X2, z2 = X2_encoder(X2_dim)
+    # データの欠損数を表示
+    #print("missing sound data:", sound_un_labeled_X1.isnull().sum().sum() / 128)
+    #print("missing tfidf data:", tfidf_un_labeled_X2.isnull().sum().sum() / 553, "\n")
 
-    # 分類層
-    multimodal_model = classification_layer(input_X1, input_X2, z1, z2)
+    un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
+    un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
 
-    # モデル生成
-    multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
+    # TODO: 疑似ラベルの生成
+
 
 # モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
@@ -425,43 +436,23 @@ def main():
         supervised_learning(X1, X2, y, supervised_meta)
 
     elif mode == '1':       # 半教師ありマルチモーダル学習
-        # 教師なしデータを読み込み
-        sound_un_labeled_X1 = pd.read_csv("train_data/2div/POW_un_labeled.csv", header=0, index_col=0)
-        tfidf_un_labeled_X2 = pd.read_csv("train_data/2div/TF-IDF_un_labeled_PCA.csv", header=0, index_col=0)
+        # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
+        # TODO: 読み込むモデルを選べるようにする
+        multimodal_model = load_model("models/multimodal/multimodal_model20221015_1246")
+        x1_single_model =  load_model("models/x1/x1_model20221015_1246")
+        x2_single_model =  load_model("models/x2/x2_model20221015_1246")
 
-        # データをランダムに欠損させる<試作版>
-        for (unX1_row, unX2_row) in zip(sound_un_labeled_X1.values, tfidf_un_labeled_X2.values):
-            missing = random.choice([0, 1])
+        # データを分割
+        X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
 
-            if missing == 0:
-                unX1_row[:] = None
-
-            else:
-                unX2_row[:] = None
-
-        # 教師ありデータを表示
-        print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
-        print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
-
-        # 教師なしデータを表示
-        print("\nun supervised sound data\n", sound_un_labeled_X1.head(), "\n")
-        print("un supervised tfidf data\n", tfidf_un_labeled_X2.head(), "\n")
-
-        # データの欠損数を表示
-        print("missing sound data:", sound_un_labeled_X1.isnull().sum().sum() / 128)
-        print("missing tfidf data:", tfidf_un_labeled_X2.isnull().sum().sum() / 553, "\n")
-
-        un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
-        un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
-
-        semi_supervised_learning(X1, X2, un_X1, un_X2, y)
+        semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data)
 
     elif mode == "2":
         # モデルを読み込む
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221015_1246")
-        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221015_1246")
-        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221015_1246")
+        multimodal_model = load_model("models/multimodal/multimodal_model20221015_1246")
+        x1_single_model =  load_model("models/x1/x1_model20221015_1246")
+        x2_single_model =  load_model("models/x2/x2_model20221015_1246")
 
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
