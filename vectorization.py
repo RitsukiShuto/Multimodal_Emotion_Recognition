@@ -92,7 +92,7 @@ def main():
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 学習に用いるデータの文字数の基準値
-    LEN = 7
+    LEN = 0
 
     # wavファイルのディレクトリ
     wav_dir = "data/wav/OGVC_vol1/all_data/"
