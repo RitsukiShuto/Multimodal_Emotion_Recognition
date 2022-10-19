@@ -172,17 +172,20 @@ def supervised_learning(X1, X2, y, meta_data):      # セットになったデ�
     # モデルの評価
     evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
 
-    # ログを保存
-    save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+    
 
     # 続けて半教師あり学習を行うか判断
-    flag = input("semi supervised(y/n):")
+    #flag = input("semi supervised(y/n):")
+    flag = 'y'
 
     if flag == 'y' or flag == 'Y':
         semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data)
 
+    else:# ログを保存
+        save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+
 # 半教師あり学習
-def semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data):          # すべてのデータで学習
+def semi_supervised_learning(multimodal_model, X1, X2, y, meta_data):          # すべてのデータで学習
     print("semi supervised learning")       # DEBUG
 
     # TODO: ラベルなしデータを読み込む
@@ -211,21 +214,69 @@ def semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_da
 
     # TODO: 疑似ラベルの生成
     # MEMO: 100件程度のデータを推定して信頼度の高いデータを教師ありデータとして扱う。
-    # un_X1.shape[0] / 30 --> データ数 / ループさせたい回数???
+    temp_label_list = []        # 疑似ラベルリスト
+    X1_temp_labeled = []        # 疑似ラベルありデータ
+    X2_temp_labeled = []
 
-    data_cnt = un_X1.shape[0]
-    loop_times = int(data_cnt / 30)
-    start = 0           # [start:end: --> 推定するデータの範囲
-    end = 0 + loop_times
+    data_cnt = un_X1.shape[0]   # データ件数
+    loop_times = int(data_cnt / 100)
+    last_loop = data_cnt - loop_times
+    start = 0
+    end = loop_times
 
     batchsize = 64
+    reliableness = 0.4
     
-    for i in range(data_cnt):
-        MM_encoded = multimodal_model.predict(x=[un_X1[i:i+1][0:], un_X2[i:i+1][0:]], batch_size=batchsize)
-        print(np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+    # DEBUG
+    print("X1 lebeled data:", X1.shape)
+    print("X2 labeled data:", X2.shape)
+    print(y.shape)
 
-        #start = end
+    print("unX1:", np.shape(un_X1))
+    print("unX2:", np.shape(un_X2))
 
+    for i in range(loop_times):
+        for j in range(start, end, 1):
+            # ラベルなしデータを推定
+            MM_encoded = multimodal_model.predict(x=[un_X1[j:j+1][0:], un_X2[j:j+1][0:]], batch_size=batchsize)
+            #print(np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+
+            # TODO: 一定の信頼度よりも高いとき疑似ラベルを生成
+            temp_label = np.zeros((1, 8), dtype=int)        # ワンホットエンコーディング, あらあかじめゼロパディングしておく
+            
+            if max(MM_encoded[0]) < reliableness:
+                temp_label[0][np.argmax(MM_encoded[0])] = 1        # ワンホットエンコーディング
+                temp_x1 = un_X1[j:j+1][0:]
+                temp_x2 = un_X2[j:j+1][0:]
+
+                print(temp_label)
+
+                y = np.append(y, temp_label, axis=0)              # 学習に使うデータを格納
+                X1 = np.append(X1, temp_x1, axis=0)
+                X2 = np.append(X2, temp_x2, axis= 0)
+            
+        start = end
+        end += loop_times
+        reliableness += 0.025
+
+        # データを結合
+        #np.vstack([y, temp_label_list])
+        #np.vstack([X1, X1_temp_labeled])
+        #np.vstack([X2, X2_temp_labeled])
+
+        # 学習
+        #print("疑似ラベル付きデータ:", len(temp_label_list))
+
+        print(X1.shape)
+        print(X2.shape)
+        print(y.shape)
+        supervised_learning(X1, X2, y, meta_data)
+
+        # 評価
+
+        #print(temp_label_list)
+        #print(X1_temp_labeled)
+        #print(X2_temp_labeled)
 
 
 # モデルの評価
@@ -245,18 +296,18 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     X1_score = x1_single_model.evaluate(X1_test, y_test, verbose=0)
     X2_score = x2_single_model.evaluate(X2_test, y_test, verbose=0)
 
-    multimodal_model.summary()
+    #multimodal_model.summary()
     print("Multimodal score")
     print("Test loss:", MM_score[0])
     print("test accuracy:", MM_score[1], "\n")
 
 
-    x1_single_model.summary()
+    #x1_single_model.summary()
     print("X1 score")
     print("Test loss:", X1_score[0])
     print("test accuracy:", X1_score[1], "\n")
 
-    x2_single_model.summary()
+    #x2_single_model.summary()
     print("X2 score")
     print("Test loss:", X2_score[0])
     print("test accuracy:", X2_score[1], "\n")
@@ -326,8 +377,8 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
     df2 = df2.sort_values(by=["file name", "f_num"])
     df2.to_csv("predict_log/correct_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
-    print(df1.head(), "\n")       # DEBUG
-    print(df2.head())
+    #print(df1.head(), "\n")       # DEBUG
+    #print(df2.head())
 
     # TODO: 単一モーダルのモデル用を追加する
 
@@ -398,7 +449,7 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 
     plt.savefig(make_dir + "/reslt_x2_graph" + file_name + '.png')
 
-    plt.show()
+    #plt.show()
 
 def main():
     # メタデータのディレクトリ
@@ -465,7 +516,7 @@ def main():
         # データを分割
         X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
 
-        semi_supervised_learning(multimodal_model, X1_test, X2_test, y_test, meta_data)
+        semi_supervised_learning(multimodal_model, X1, X2, y, meta_data)
 
     elif mode == "2":
         # モデルを読み込む
