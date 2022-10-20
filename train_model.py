@@ -101,11 +101,6 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     X1_dim = X1_train.shape[1]      # モダリティ1(音声)の次元数
     X2_dim = X2_train.shape[1]      # モダリティ2(テキスト)の次元数
 
-    # DEBUG:
-    print("X1_train.shape:", X1_train.shape)        # 学習用モダリティ1(データ数, 入力次元数)
-    print("X2_train.shape:", X2_train.shape)        # 学習用モダリティ2(データ数, 入力次元数)
-    print("y_train.shape:", y_train.shape)          # 学習用ラベル(データ数, クラス数)
-
     # 特徴量抽出層
     input_X1, z1, x1_single_model = X1_encoder(X1_dim)
     input_X2, z2, x2_single_model = X2_encoder(X2_dim)
@@ -132,7 +127,7 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
                                           batch_size=batch_size,
                                           epochs=epochs,
                                           callbacks=[early_stopping],
-                                          verbose=0
+                                          #verbose=0
                                           )
 
     x1_fit = x1_single_model.fit(x=X1_train,
@@ -141,7 +136,7 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 #verbose=0
                                  )
 
     x2_fit = x2_single_model.fit(x=X2_train,
@@ -150,7 +145,7 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 #verbose=0
                                  )
 
     # モデルを保存
@@ -189,8 +184,8 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     #print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
 
     # 教師なしデータを表示
-    print("\nun supervised sound data\n", sound_un_labeled_X1.head(), "\n")
-    print("un supervised tfidf data\n", tfidf_un_labeled_X2.head(), "\n")
+    #print("\nun supervised sound data\n", sound_un_labeled_X1.head(), "\n")
+    #print("un supervised tfidf data\n", tfidf_un_labeled_X2.head(), "\n")
 
     # データの欠損数を表示
     #print("missing sound data:", sound_un_labeled_X1.isnull().sum().sum() / 128)
@@ -211,7 +206,10 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     X2_temp_labeled = []
 
     data_cnt = un_X1.shape[0]   # データ件数
-    loop_times = int(data_cnt / 100)
+    cnt_temp_label = 0
+
+    loop_times = 100
+    per_loop = data_cnt / loop_times
     last_loop = data_cnt - loop_times
     start = 0
     end = loop_times
@@ -228,15 +226,17 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     #print("unX2:", np.shape(un_X2))
 
     for i in range(loop_times):
+        print(start, "to", end)
+
         for j in range(start, end, 1):
             # ラベルなしデータを推定
             MM_encoded = multimodal_model.predict(x=[un_X1[j:j+1][0:], un_X2[j:j+1][0:]], batch_size=batchsize)
-            #print(np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+            print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
 
             # TODO: 一定の信頼度よりも高いとき疑似ラベルを生成
             temp_label = np.zeros((1, 8), dtype=int)        # ワンホットエンコーディング, あらあかじめゼロパディングしておく
-            
-            if max(MM_encoded[0]) < reliableness:
+                
+            if max(MM_encoded[0]) > reliableness:
                 temp_label[0][np.argmax(MM_encoded[0])] = 1        # ワンホットエンコーディング
                 temp_x1 = un_X1[j:j+1][0:]
                 temp_x2 = un_X2[j:j+1][0:]
@@ -244,25 +244,16 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
                 y_train = np.append(y_train, temp_label, axis=0)              # 学習に使うデータを格納
                 X1_train = np.append(X1_train, temp_x1, axis=0)
                 X2_train = np.append(X2_train, temp_x2, axis= 0)
-            
-        start = end
+
+                cnt_temp_label += 1
+
+        #start = end + 1
         end += loop_times
         #reliableness += 0.025
 
-        # 学習
-        #print("疑似ラベル付きデータ:", )
-
-        #print(X1_train.shape)
-        #print(X2_train.shape)
-        #print(y_train.shape)
-
+        print("追加データ数:", cnt_temp_label)
         supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
-
-        # 評価
-        #print(temp_label_list)
-        #print(X1_temp_labeled)
-        #print(X2_temp_labeled)
-
+        
 # モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model,
                    X1_test, X2_test, y_test, meta_data):
@@ -483,9 +474,6 @@ def main():
         print("\n\nsupervised sound data\n", sound_labeled_X1.head(), "\n")
         print("supervised tfidf data\n", tfidf_labeled_X2.head(), "\n")
         print("label data\n", label_list.head(), "\n")
-
-        print(X1)
-        print(X2)
 
         # 教師あり学習を実行
         supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, supervised_meta)
