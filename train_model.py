@@ -41,7 +41,7 @@ def X1_encoder(X1_dim):
 
     # 単一モダリティでの分類用のネットワーク
     c_x1 = Dropout(0.5)(z1)
-    c_x1 = Dense(8, activation='softmax')(c_x1)
+    c_x1 = Dense(6, activation='softmax')(c_x1)
     x1_single_model = Model(input_X1, c_x1)
     
     return input_X1, z1, x1_single_model
@@ -50,12 +50,12 @@ def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(X2_dim, 1), name='input_X2')
 
-    hidden = Dense(500, activation='relu')(input_X2)
+    hidden = Dense(300, activation='relu')(input_X2)
     hidden = Dense(250, activation='relu')(hidden)
     hidden = Dense(150, activation='relu')(hidden)
     hidden = Dense(50, activation='relu')(hidden)
 
-    hidden = Conv1D(8, 2, padding='same', activation='relu')(hidden)
+    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
 
     z2 = Flatten()(hidden)
@@ -64,7 +64,7 @@ def X2_encoder(X2_dim):
 
     # 単一モダリティでの分類用のネットワーク
     c_x2 = Dropout(0.5)(z2)
-    c_x2 = Dense(8, activation='softmax')(c_x2)
+    c_x2 = Dense(6, activation='softmax')(c_x2)
     x2_single_model = Model(input_X2, c_x2)
 
     return input_X2, z2, x2_single_model
@@ -88,7 +88,7 @@ def classification_layer(input_X1, input_X2, z1, z2):
 
     # 出力層
     classification_output = Dropout(0.5)(classification)
-    output = Dense(8, activation='softmax', name='output_layer')(classification_output)
+    output = Dense(6, activation='softmax', name='output_layer')(classification_output)
 
     multimodal_model = Model([input_X1, input_X2], output)
 
@@ -208,7 +208,7 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     data_cnt = un_X1.shape[0]   # データ件数
     cnt_temp_label = 0
 
-    loop_times = 100
+    loop_times = 10
     per_loop = data_cnt / loop_times
     last_loop = data_cnt - loop_times
     start = 0
@@ -234,7 +234,7 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
             print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
 
             # TODO: 一定の信頼度よりも高いとき疑似ラベルを生成
-            temp_label = np.zeros((1, 8), dtype=int)        # ワンホットエンコーディング, あらあかじめゼロパディングしておく
+            temp_label = np.zeros((1, 6), dtype=int)        # ワンホットエンコーディング, あらあかじめゼロパディングしておく
                 
             if max(MM_encoded[0]) > reliableness:
                 temp_label[0][np.argmax(MM_encoded[0])] = 1        # ワンホットエンコーディング
