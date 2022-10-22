@@ -88,7 +88,7 @@ def _PCA(X):
 def main():
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
-    meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)
+    meta_data = pd.read_csv("data/OGVC_Vol1_supervised_4emo.csv", header=0)
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 学習に用いるデータの文字数の基準値
