@@ -127,7 +127,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                           batch_size=batch_size,
                                           epochs=epochs,
                                           callbacks=[early_stopping],
-                                          verbose=0
+                                          #verbose=0
                                           )
 
     x1_fit = x1_single_model.fit(x=X1_train,
@@ -136,7 +136,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 #verbose=0
                                  )
 
     x2_fit = x2_single_model.fit(x=X2_train,
@@ -145,7 +145,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 #verbose=0
                                  )
 
     # モデルを保存
@@ -350,12 +350,15 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
 
 # 半教師あり学習
-def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):          # すべてのデータで学習
+def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X2_un, X2_test, y_train, y_sv, y_test, meta_data):          # すべてのデータで学習
     print("semi supervised learning")       # DEBUG
+
+    # 
+    print(X2_sv.shape)
 
     # 初回学習
     print("###初回学習を開始###")
-    model_fit(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+    multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
 
     # TODO: ラベルなしデータを読み込む
     sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
@@ -365,18 +368,30 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
     un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
 
+    # 新規読み込みデータと教師ありデータを結合
+    un_X1 = np.append(X1_un, un_X1, axis=0)
+    un_X2 = np.append(X2_un, un_X2, axis=0)
+
+    print(un_X1.shape)
+    print(un_X2.shape)
+
+    # シャッフル
+    np.random.seed(0)
+    np.random.shuffle(un_X1)
+    np.random.shuffle(un_X2)
+
     data_cnt = un_X1.shape[0]   # データ件数
     cnt_temp_label = 0
 
     # ループ回数等に関わる変数
-    loop_times = 10
+    loop_times = 100
     per_loop = data_cnt / loop_times
     last_loop = data_cnt - loop_times
     start = 0
     end = loop_times
 
     # 推定時のパラメータ
-    batchsize = 256
+    batchsize = 64
     reliableness = 0.4
     
     print("教師なしデータ")
@@ -384,17 +399,20 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
     print("unX2:", np.shape(un_X2))
 
     # 疑似ラベルの生成
-    while loop_times:
+    for i in range(loop_times):
+        print(i)
         print(start, "to", end)
 
+        print("reliableness:", reliableness)
         for j in range(start, end, 1):
             # ラベルなしデータを推定
             MM_encoded = multimodal_model.predict(x=[un_X1[j:j+1][0:], un_X2[j:j+1][0:]], batch_size=batchsize)
-            print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
 
             # 一定の信頼度よりも高いとき疑似ラベルを生成    
             if max(MM_encoded[0]) > reliableness:
-                temp_label = np.zeros((1, 6), dtype=int)        # あらあかじめゼロパディングしておく
+                print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+
+                temp_label = np.zeros((1, 5), dtype=int)        # あらあかじめゼロパディングしておく
                 temp_label[0][np.argmax(MM_encoded[0])] = 1     # 疑似ラベル
                 temp_x1 = un_X1[j:j+1][0:]                      # X1疑似ラベル付きデータ
                 temp_x2 = un_X2[j:j+1][0:]                      # X2疑似ラベル付きデータ
@@ -409,10 +427,10 @@ def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_t
         start = end + 1
         end += loop_times
 
-        #reliableness += 0.025      # ループごとに信頼度を上げる
+        reliableness += 0.0      # ループごとに信頼度を上げる
 
         print("追加データ数:", cnt_temp_label)
-        model_fit(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+        model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
         
 def main():
     # メタデータのディレクトリ
@@ -473,12 +491,11 @@ def main():
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
         # TODO: 読み込むモデルを選べるようにする
-        multimodal_model = tf.keras.models.load_model("models/multimodal/multimodal_model20221018_1708")
-        x1_single_model =  tf.keras.models.load_model("models/x1/x1_model20221015_1246")
-        x2_single_model =  tf.keras.models.load_model("models/x2/x2_model20221015_1246")
+        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0)
 
         
-        semi_supervised_learning(multimodal_model,X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+        #semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+        semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X2_un, X2_test, y_train, y_sv, y_test, meta_data)
 
     elif mode == "2":
         # モデルを読み込む
