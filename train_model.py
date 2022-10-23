@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
+from pyexpat import model
 import matplotlib.pyplot as plt
 import datetime
 import os
@@ -162,86 +163,6 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
 
     return multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit
 
-# 教師あり学習
-def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):      # セットになったデータのみ学習
-    # データを表示
-    print("データ件数:")
-    print("X1 次元数:")
-    print("X2 次元数")
-    print("ラベル分布")
-
-    # モデルを学習
-    multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
-
-    # モデルの評価
-    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
-
-    # ログを保存
-    save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
-
-# 半教師あり学習
-def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):          # すべてのデータで学習
-    print("semi supervised learning")       # DEBUG
-
-    # 初回学習
-    model_fit(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
-
-    # TODO: ラベルなしデータを読み込む
-    sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
-    tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
-
-    # データを変換
-    un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
-    un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
-
-    data_cnt = un_X1.shape[0]   # データ件数
-    cnt_temp_label = 0
-
-    # ループ回数等に関わる変数
-    loop_times = 10
-    per_loop = data_cnt / loop_times
-    last_loop = data_cnt - loop_times
-    start = 0
-    end = loop_times
-
-    # 推定時のパラメータ
-    batchsize = 256
-    reliableness = 0.4
-    
-    print("教師なしデータ")
-    print("unX1:", np.shape(un_X1))
-    print("unX2:", np.shape(un_X2))
-
-    # 疑似ラベルの生成
-    for i in range(loop_times):
-        print(start, "to", end)
-
-        for j in range(start, end, 1):
-            # ラベルなしデータを推定
-            MM_encoded = multimodal_model.predict(x=[un_X1[j:j+1][0:], un_X2[j:j+1][0:]], batch_size=batchsize)
-            print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
-
-            # 一定の信頼度よりも高いとき疑似ラベルを生成
-            temp_label = np.zeros((1, 6), dtype=int)        # ワンホットエンコーディング, あらあかじめゼロパディングしておく
-                
-            if max(MM_encoded[0]) > reliableness:
-                temp_label[0][np.argmax(MM_encoded[0])] = 1        # ワンホットエンコーディング
-                temp_x1 = un_X1[j:j+1][0:]
-                temp_x2 = un_X2[j:j+1][0:]
-
-                y_train = np.append(y_train, temp_label, axis=0)              # 学習に使うデータを格納
-                X1_train = np.append(X1_train, temp_x1, axis=0)
-                X2_train = np.append(X2_train, temp_x2, axis= 0)
-
-                cnt_temp_label += 1
-
-        start = end + 1
-        end += loop_times
-        #reliableness += 0.025
-
-        print("追加データ数:", cnt_temp_label)
-        supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
-        
 # モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data):
 
@@ -273,6 +194,8 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, 
     print("X2 score")
     print("Test loss:", X2_score[0])
     print("test accuracy:", X2_score[1], "\n")
+
+    # TODO: クラスごとの分類精度を表示する。
 
     # 不正解ログ作成の準備
     incorrect_ans_list = []
@@ -409,6 +332,88 @@ def save_log(multimodal_model, x1_single_model, x2_single_model,
 
     #plt.show()
 
+# 教師あり学習
+def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):      # セットになったデータのみ学習
+    # データを表示
+    print("データ件数:")
+    print("X1 次元数:")
+    print("X2 次元数")
+    print("ラベル分布")
+
+    # モデルを学習
+    multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
+
+    # モデルの評価
+    evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
+
+    # ログを保存
+    save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+
+# 半教師あり学習
+def semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):          # すべてのデータで学習
+    print("semi supervised learning")       # DEBUG
+
+    # 初回学習
+    print("###初回学習を開始###")
+    model_fit(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+
+    # TODO: ラベルなしデータを読み込む
+    sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
+
+    # データを変換
+    un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
+    un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
+
+    data_cnt = un_X1.shape[0]   # データ件数
+    cnt_temp_label = 0
+
+    # ループ回数等に関わる変数
+    loop_times = 10
+    per_loop = data_cnt / loop_times
+    last_loop = data_cnt - loop_times
+    start = 0
+    end = loop_times
+
+    # 推定時のパラメータ
+    batchsize = 256
+    reliableness = 0.4
+    
+    print("教師なしデータ")
+    print("unX1:", np.shape(un_X1))
+    print("unX2:", np.shape(un_X2))
+
+    # 疑似ラベルの生成
+    while loop_times:
+        print(start, "to", end)
+
+        for j in range(start, end, 1):
+            # ラベルなしデータを推定
+            MM_encoded = multimodal_model.predict(x=[un_X1[j:j+1][0:], un_X2[j:j+1][0:]], batch_size=batchsize)
+            print(j, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+
+            # 一定の信頼度よりも高いとき疑似ラベルを生成    
+            if max(MM_encoded[0]) > reliableness:
+                temp_label = np.zeros((1, 6), dtype=int)        # あらあかじめゼロパディングしておく
+                temp_label[0][np.argmax(MM_encoded[0])] = 1     # 疑似ラベル
+                temp_x1 = un_X1[j:j+1][0:]                      # X1疑似ラベル付きデータ
+                temp_x2 = un_X2[j:j+1][0:]                      # X2疑似ラベル付きデータ
+
+                y_train = np.append(y_train, temp_label, axis=0)        # 教師ありデータにスタック
+                X1_train = np.append(X1_train, temp_x1, axis=0)
+                X2_train = np.append(X2_train, temp_x2, axis= 0)
+
+                cnt_temp_label += 1
+
+        # 次のループの参照範囲
+        start = end + 1
+        end += loop_times
+
+        #reliableness += 0.025      # ループごとに信頼度を上げる
+
+        print("追加データ数:", cnt_temp_label)
+        model_fit(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
+        
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
