@@ -127,7 +127,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                           batch_size=batch_size,
                                           epochs=epochs,
                                           callbacks=[early_stopping],
-                                          verbose=0
+                                          verbose=0  # type: ignore
                                           )
 
     x1_fit = x1_single_model.fit(x=X1_train,
@@ -136,7 +136,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 verbose=0  # type: ignore
                                  )
 
     x2_fit = x2_single_model.fit(x=X2_train,
@@ -145,7 +145,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
                                  batch_size = batch_size,
                                  epochs=epochs,
                                  callbacks=[early_stopping],
-                                 verbose=0
+                                 verbose=0  # type: ignore
                                  )
 
     # モデルを保存
@@ -348,10 +348,21 @@ def save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit,
 def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):      # セットになったデータのみ学習
     result = np.empty((0, 5, 5))
 
-    X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0)
+    #X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0, stratify=y_train)
 
-    print("学習データ件数:", X1_sv.shape[0])
+    #print("学習データ件数:", X1_sv.shape[0])  # type: ignore
     print("テストデータ件数:", X1_test.shape[0])
+
+    label_cnt = pd.DataFrame(y_train, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+
+    print("\n学習データのクラスごとの件数")
+    print("ANG", len(label_cnt.query('ANG == 1')))
+    print("JOY", len(label_cnt.query('JOY == 1')))
+    print("NEU", len(label_cnt.query('NEU == 1')))
+    print("SAD", len(label_cnt.query('SAD == 1')))
+    print("SUR", len(label_cnt.query('SUR == 1')))
+
+    print("学習データ総計:", len(label_cnt))
 
     for i in range(10):
         print("\nループ回数:", i+1, "\n")
@@ -363,7 +374,7 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
         #print("ラベル分布")
 
         # モデルを学習
-        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
+        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
 
         # 混同行列を格納
         conf_mat = np.reshape(MM_confusion_matrix, (1, 5, 5))
@@ -396,7 +407,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     print(X2_sv.shape)
     result = np.empty((0, 5, 5))
 
-    for i in range(10):
+    for i in range(1):
 
         print("\nループ回数:", i+1, "\n")
 
@@ -425,62 +436,55 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         np.random.shuffle(un_X2)
 
         data_cnt = un_X1.shape[0]   # データ件数
-        cnt_temp_label = 0
 
         # ループ回数等に関わる変数
-        loop_times = 100
-        per_loop = data_cnt / loop_times
-        last_loop = data_cnt - loop_times
+        ref_dara_range = 100
+        loop_times = data_cnt / ref_dara_range      # ループ回数
+        last_loop = data_cnt - ref_dara_range       # TODO: ラベルなしデータの端数部を処理するための変数
+
+        # データの参照範囲
         start = 0
-        end = loop_times
+        end = ref_dara_range
 
         # 推定時のパラメータ
         batchsize = 256
-        reliableness = 0.4
+        reliableness = 0.3
         
         print("教師なしデータ")
         print("unX1:", np.shape(un_X1))
         print("unX2:", np.shape(un_X2))
 
         # 疑似ラベルの生成
-        for j in range(int(per_loop)):
-            print(j+1, "/", per_loop)
+        for j in range(int(loop_times)):
+            print(j+1, "/", loop_times)
             print(start, "to", end)
 
-            print("reliableness:", reliableness)
-            for k in range(start, end, 1):
-                # ラベルなしデータを推定
-                MM_encoded = multimodal_model.predict(x=[un_X1[k:k+1][0:], un_X2[k:k+1][0:]], batch_size=batchsize)
+            #print("reliableness:", reliableness)
 
-                # 一定の信頼度よりも高いとき疑似ラベルを生成    
-                if max(MM_encoded[0]) > reliableness:
-                    print(k, np.argmax(MM_encoded[0]), max(MM_encoded[0]))
+            # ラベルなしデータを推定
+            MM_encoded = multimodal_model.predict(x=[un_X1[start:end][0:], un_X2[start:end][0:]], batch_size=batchsize)
 
-                    temp_label = np.zeros((1, 5), dtype=int)        # あらあかじめゼロパディングしておく
-                    temp_label[0][np.argmax(MM_encoded[0])] = 1     # 疑似ラベル
-                    temp_x1 = un_X1[k:k+1][0:]                      # X1疑似ラベル付きデータ
-                    temp_x2 = un_X2[k:k+1][0:]                      # X2疑似ラベル付きデータ
+            # 信頼度が高い順に20件のデータをピックアップ
+            top20_index = np.argpartition(np.max(MM_encoded, axis=1), -20)[-20:]
+            temp_label = np.zeros((20, 5), dtype=int)
 
-                    y_train = np.append(y_train, temp_label, axis=0)        # 教師ありデータにスタック
-                    X1_train = np.append(X1_train, temp_x1, axis=0)
-                    X2_train = np.append(X2_train, temp_x2, axis= 0)
+            for l in range(len(top20_index)):
+                temp_label[l][np.argmax(MM_encoded[top20_index[l]])] = 1
 
-                    cnt_temp_label += 1
+            X1_train = np.append(X1_train, X1_un[top20_index], axis=0)      # 教師ありデータにスタック
+            X2_train = np.append(X2_train, X2_un[top20_index], axis=0)
+            y_train = np.append(y_train, temp_label,axis=0)
+
+            print("追加データ数:", len(top20_index))
+            multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_conf_mat = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
+
+            # 混同行列を格納
+            conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
+            result = np.append(result, conf_mat, axis=0)
 
             # 次のループの参照範囲
             start = end + 1
-            end += loop_times
-
-            reliableness += 0.05      # ループごとに信頼度を上げる
-
-            print("追加データ数:", cnt_temp_label)
-            multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_conf_mat = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
-
-        MM_conf_mat = evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
-
-        # 混同行列を格納
-        conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
-        result = np.append(result, conf_mat, axis=0)
+            end += ref_dara_range
 
     avg_conf_mat = np.average(result, axis=0)
     var_conf_mat = np.var(result, axis=0)
@@ -522,7 +526,7 @@ def main():
     y = label_list.to_numpy()
 
     # データを分割
-    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0)
+    X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0, stratify=y)
 
     # データを標準化
     #x_mean = X1.mean(keepdims=True)
@@ -550,7 +554,7 @@ def main():
 
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
-        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0)
+        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0, stratify=y_train)
 
         
         #semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
