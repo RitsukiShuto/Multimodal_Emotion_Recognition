@@ -1,27 +1,26 @@
 # Created by RitsukiShuto on 2022/08/01.
 # train_model.py
 #
-import matplotlib.pyplot as plt
 import datetime
 import os
-import numpy as np
-import pandas as pd
 import random
-
 from re import split
 
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 import tensorflow as tf
-from tensorflow import keras
-from keras import Model, Input
-from tensorflow.keras.optimizers import Adam
-from keras.losses import categorical_crossentropy
-from keras.layers import Dense, Dropout, Concatenate, MaxPool1D, Conv1D, Flatten, Add
-from keras.utils.vis_utils import plot_model
+from keras import Input, Model
 from keras.callbacks import EarlyStopping
+from keras.layers import (Add, Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D)
+from keras.losses import categorical_crossentropy
+from keras.utils.vis_utils import plot_model
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
 
 now = datetime.datetime.now()       # 現在時刻を取得
 
