@@ -372,12 +372,9 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     print(result)       # DEBUG
 
     # 平均と分散を計算
-    #avg_conf_mat = np.empty((5, 5))
-    #var_conf_mat = np.empty((5, 5))
-
     avg_conf_mat = np.average(result, axis=0)
     var_conf_mat = np.var(result, axis=0)
-            
+
     #print("avg confusion matrix\n", avg_conf_mat)
     #print("var confusion matrix\n", var_conf_mat)
 
@@ -407,7 +404,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         print("###初回学習を開始###")
         multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
 
-        # TODO: ラベルなしデータを読み込む
+        # ラベルなしデータを読み込む
         sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
         tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
 
@@ -553,7 +550,6 @@ def main():
 
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
-        # TODO: 読み込むモデルを選べるようにする
         X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0)
 
         
