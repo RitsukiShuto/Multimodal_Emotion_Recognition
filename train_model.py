@@ -12,15 +12,16 @@ import pandas as pd
 
 import tensorflow as tf
 from keras import Input, Model
+from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras.layers import (Add, Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D)
 from keras.losses import categorical_crossentropy
 from keras.utils.vis_utils import plot_model
+
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
-from tensorflow import keras
-from tensorflow.keras.optimizers import Adam
 
 now = datetime.datetime.now()       # 現在時刻を取得
 
