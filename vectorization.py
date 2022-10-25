@@ -88,14 +88,14 @@ def _PCA(X):
 def main():
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
-    meta_data = pd.read_csv("data/OGVC_Vol1_supervised.csv", header=0)
+    meta_data = pd.read_csv("data/OGVC_Vol1_supervised_4emo.csv", header=0)
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 学習に用いるデータの文字数の基準値
-    LEN = 7
+    LEN = 0
 
-    # wavファイルのディレクトリ
-    wav_dir = "data/wav/OGVC_vol1/all_data/"
+    wav_dir = "data/wav/OGVC_vol1/all_data/"    # wavファイルのディレクトリ
+    save_dir = "train_data/OGVC_vol1/"          # 保存先
 
     wakati_list = []
     labeled_pow_list = []
@@ -106,7 +106,6 @@ def main():
     cnt_skip_data = 0
     cnt_UNlabeled_data = 0
     cnt_labeled_data = 0
-
 
     # 音声データをパワースペクトルに変換
     # 言語データを分かち書き
@@ -174,17 +173,16 @@ def main():
 
         i += 1
 
-    save_dir = "train_data/OGVC_vol1/"
-
-    df1 = pd.DataFrame(unlabeled_pow_list)
+    # 教師ありデータ
+    df1 = pd.DataFrame(tfidf_labeled)
     df2 = pd.DataFrame(labeled_pow_list)
-    df3 = pd.DataFrame(tfidf_labeled)
-    df4 = pd.DataFrame(tfidf_unlabeled)
-
-    df1.to_csv(save_dir+"POW_un_labeled.csv", index=False, header=1)
+    df1.to_csv(save_dir+"TF-IDF_labeled.csv", index=True, header=1)
     df2.to_csv(save_dir+"POW_labeled.csv", index=False, header=1)
-    df3.to_csv(save_dir+"TF-IDF_labeled.csv", index=True, header=1)
-    df4.to_csv(save_dir+"TF-IDF_un_labeled.csv", index=True, header=1)
+
+    df3 = pd.DataFrame(tfidf_unlabeled)
+    df4 = pd.DataFrame(unlabeled_pow_list)
+    df3.to_csv(save_dir+"TF-IDF_un_labeled.csv", index=True, header=1)
+    df4.to_csv(save_dir+"POW_un_labeled.csv", index=False, header=1)
 
 if __name__ == '__main__':
     main()
