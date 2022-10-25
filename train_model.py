@@ -439,7 +439,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
 
         # 推定時のパラメータ
         batchsize = 256
-        reliableness = 0.2
+        reliableness = 0.4
         
         print("教師なしデータ")
         print("unX1:", np.shape(un_X1))
@@ -485,13 +485,15 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         result = np.append(result, conf_mat, axis=0)
 
-        avg_conf_mat = np.average(result, axis=0)
-        var_conf_mat = np.var(result, axis=0)
+    avg_conf_mat = np.average(result, axis=0)
+    var_conf_mat = np.var(result, axis=0)
 
         # 配列をDataFrameに変換
-        df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
-        df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
+    print(df_avg)
+    print(df_var) 
         
 def main():
     # メタデータのディレクトリ
