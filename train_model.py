@@ -116,7 +116,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # epochsとbatch_size
-    epochs = 250        # 学習用パラメータ(デフォルトはe=250, b=64)
+    epochs = 10        # 学習用パラメータ(デフォルトはe=250, b=64)
     batch_size = 256
 
     early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
@@ -278,6 +278,34 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, 
 
     return MM_confusion_matrix
     
+def calc_conf_mat(MM_confusion_matrix):
+    df_conf_mat = pd.DataFrame(MM_confusion_matrix, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    df_conf_mat['Number of test data by class'] = df_conf_mat.sum(axis=1)       # クラスごとの合計を計算
+    df_conf_mat.at['5', 'Number of test data by class'] = df_conf_mat['Number of test data by class'].sum(axis=0)       # テストデータの合計を計算
+
+    df_conf_mat_prob = np.empty((5, 5))
+
+    for j in range(5):
+        for k in range(5):
+            # 各要素ごとの確率を計算して格納
+            df_conf_mat_prob[j, k] = (df_conf_mat.iloc[j, k] / df_conf_mat.at[j, 'Number of test data by class']) * 100
+
+        # dataFrameに変換
+        df_conf_mat_prob = pd.DataFrame(df_conf_mat_prob,
+                                        columns=['ANG', 'JOY','NEU', 'SAD', 'SUR'],
+                                        index=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+
+        # 精度を格納
+        df_conf_mat_prob.at['5', 'accuracy'] = sum(np.diag(df_conf_mat_prob)) / df_conf_mat.at['5', 'Number of test data by class']
+
+        print(df_conf_mat, '\n\n')
+        print(df_conf_mat_prob)
+
+        # 保存
+        
+
+        # ここまで
+
 # ログを保存
 def save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
     # ログを保存
@@ -348,6 +376,7 @@ def save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit,
 def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data):      # セットになったデータのみ学習
     result = np.empty((0, 5, 5))
 
+    # 半教師あり学習と同数のデータで学習
     #X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0, stratify=y_train)
 
     #print("学習データ件数:", X1_sv.shape[0])  # type: ignore
@@ -376,6 +405,9 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
         # モデルを学習
         multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
 
+        calc_conf_mat(MM_confusion_matrix)
+
+
         # 混同行列を格納
         conf_mat = np.reshape(MM_confusion_matrix, (1, 5, 5))
         result = np.append(result, conf_mat, axis=0)
@@ -386,12 +418,11 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     avg_conf_mat = np.average(result, axis=0)
     var_conf_mat = np.var(result, axis=0)
 
-    #print("avg confusion matrix\n", avg_conf_mat)
-    #print("var confusion matrix\n", var_conf_mat)
-
     # 配列をDataFrameに変換
     df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
     df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+
+    # 
 
     print("\n", df_avg, "\n")
     print(df_var)
@@ -407,6 +438,40 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     print(X2_sv.shape)
     result = np.empty((0, 5, 5))
 
+    # ラベルなしデータを読み込む
+    sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
+
+    # データを変換
+    un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
+    un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
+
+    # 新規読み込みデータと教師ありデータを結合
+    un_X1 = np.append(X1_un, un_X1, axis=0)
+    un_X2 = np.append(X2_un, un_X2, axis=0)
+
+    print(un_X1.shape)
+    print(un_X2.shape)
+
+    data_cnt = un_X1.shape[0]   # データ件数
+
+    # ループ回数等に関わる変数
+    ref_dara_range = 60
+    loop_times = data_cnt / ref_dara_range      # ループ回数
+    last_loop = data_cnt - ref_dara_range       # TODO: ラベルなしデータの端数部を処理するための変数
+
+    # データの参照範囲
+    start = 0
+    end = ref_dara_range
+
+    # 推定時のパラメータ
+    batchsize = 256
+    reliableness = 0.3
+        
+    print("教師なしデータ")
+    print("unX1:", np.shape(un_X1))
+    print("unX2:", np.shape(un_X2))
+
     for i in range(1):
 
         print("\nループ回数:", i+1, "\n")
@@ -415,48 +480,9 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         print("###初回学習を開始###")
         multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
 
-        # ラベルなしデータを読み込む
-        sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
-        tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
-
-        # データを変換
-        un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
-        un_X2 = tfidf_un_labeled_X2.to_numpy()        # 学習データをnumpy配列に変換
-
-        # 新規読み込みデータと教師ありデータを結合
-        un_X1 = np.append(X1_un, un_X1, axis=0)
-        un_X2 = np.append(X2_un, un_X2, axis=0)
-
-        print(un_X1.shape)
-        print(un_X2.shape)
-
-        # シャッフル
-        np.random.seed(0)
-        np.random.shuffle(un_X1)
-        np.random.shuffle(un_X2)
-
-        data_cnt = un_X1.shape[0]   # データ件数
-
-        # ループ回数等に関わる変数
-        ref_dara_range = 100
-        loop_times = data_cnt / ref_dara_range      # ループ回数
-        last_loop = data_cnt - ref_dara_range       # TODO: ラベルなしデータの端数部を処理するための変数
-
-        # データの参照範囲
-        start = 0
-        end = ref_dara_range
-
-        # 推定時のパラメータ
-        batchsize = 256
-        reliableness = 0.3
-        
-        print("教師なしデータ")
-        print("unX1:", np.shape(un_X1))
-        print("unX2:", np.shape(un_X2))
-
         # 疑似ラベルの生成
         for j in range(int(loop_times)):
-            print(j+1, "/", loop_times)
+            print(j+1, "/", int(loop_times))
             print(start, "to", end)
 
             #print("reliableness:", reliableness)
@@ -475,6 +501,16 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             X2_train = np.append(X2_train, X2_un[top20_index], axis=0)
             y_train = np.append(y_train, temp_label,axis=0)
 
+            # データをシャッフル
+            np.random.seed(0)      # ランダムシード
+            np.random.shuffle(X1_train)     # シャッフル
+
+            np.random.seed(0)
+            np.random.shuffle(X2_train)
+
+            np.random.seed(0)
+            np.random.shuffle(y_train)
+
             print("追加データ数:", len(top20_index))
             multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_conf_mat = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
 
@@ -489,13 +525,15 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     avg_conf_mat = np.average(result, axis=0)
     var_conf_mat = np.var(result, axis=0)
 
-        # 配列をDataFrameに変換
+    # 配列をDataFrameに変換
     df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
     df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
     print(df_avg)
-    print(df_var) 
-        
+    print(df_var)
+
+    save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
+
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
