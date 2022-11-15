@@ -34,7 +34,7 @@ def load_wav(filename):
     return data
 
 # FFTを行いパワースペクトルを計算する
-def pow_spectrum(wav_file, size):
+def calc_pow_spectrum(wav_file, size):
     st = 1000                       # サンプリングする開始位置
     fs = 44100                      # サンプリングレート
     d = 1.0 / fs                    # サンプリングレートの逆数
@@ -122,7 +122,7 @@ def main():
                 print("[INFO]", wav_file_name, "is un labeled data.")     # DEBUG
 
                 # パワースペクトルを取得
-                pow_spect = pow_spectrum(wav_dir + wav_file_name + ".wav", 64)
+                pow_spect = calc_pow_spectrum(wav_dir + wav_file_name + ".wav", 1000)
                 pow_spect = np.hstack((wav_file_name, pow_spect))
                 unlabeled_pow_list.append(pow_spect)
 
@@ -139,7 +139,7 @@ def main():
                 print("[INFO]", wav_file_name, "is labeled data.")     # DEBUG
 
                 # パワースペクトルを取得
-                pow_spect = pow_spectrum(wav_dir + wav_file_name + ".wav", 64)
+                pow_spect = calc_pow_spectrum(wav_dir + wav_file_name + ".wav", 1000)
                 pow_spect = np.hstack((wav_file_name, pow_spect))
                 labeled_pow_list.append(pow_spect)
                 

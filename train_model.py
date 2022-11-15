@@ -29,10 +29,13 @@ now = datetime.datetime.now()       # 現在時刻を取得
 def X1_encoder(X1_dim):
     # モダリティ1の特徴量抽出層
     input_X1 = Input(shape=(X1_dim, 1), name="input_X1")
+    #input_X1 = Input(batch_shape=(None, X1_dim), name='input_X1_DNN')
 
-    hidden = Dense(30, activation='relu')(input_X1)
-    hidden = Dense(15, activation='relu')(hidden)
-    hidden = Dense(15, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(input_X1)
+    hidden = Dense(12, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
+
+    #z1 = Dense(10, activation='relu')(hidden)
 
     hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
@@ -49,13 +52,16 @@ def X1_encoder(X1_dim):
 def X2_encoder(X2_dim):
     # モダリティ2の特徴量抽出層
     input_X2 = Input(shape=(X2_dim, 1), name='input_X2')
+    #input_X2 = Input(batch_shape=(None, X2_dim), name='input_X2_DNN')
 
     hidden = Dense(300, activation='relu')(input_X2)
     hidden = Dense(250, activation='relu')(hidden)
     hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
 
-    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    #z2 = Dense(100, activation='relu')(hidden)
+
+    hidden = Conv1D(100, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
 
     z2 = Flatten()(hidden)
@@ -76,12 +82,14 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(20, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+    classification = Dense(110, activation='relu', name='classification_1')(concat)     # concat or maxpooling
 
-    classification = Dense(15, activation='relu', name='classification_2')(classification)
-    classification = Dense(15, activation='relu', name='classification_3')(classification)
+    classification = Dense(50, activation='relu', name='classification_2')(classification)
+    classification = Dense(20, activation='relu', name='classification_3')(classification)
+    classification = Dense(20, activation='relu', name='classification_4')(classification)
 
-    classification = Dense(10, activation='relu', name='classification_4')(classification)
+
+    classification = Dense(10, activation='relu', name='classification_5')(classification)
     #classification = MaxPool1D(pool_size=4, padding='same')(classification)
 
     #classification = Flatten()(classification)
@@ -116,7 +124,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # epochsとbatch_size
-    epochs = 10        # 学習用パラメータ(デフォルトはe=250, b=64)
+    epochs = 250        # 学習用パラメータ(デフォルトはe=250, b=64)
     batch_size = 256
 
     early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
@@ -277,7 +285,8 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, 
         # TODO: 各ラベルの確率で出力する
 
     return MM_confusion_matrix
-    
+
+# 混同行列の整形, 保存
 def calc_conf_mat(MM_confusion_matrix):
     df_conf_mat = pd.DataFrame(MM_confusion_matrix, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
     df_conf_mat['Number of test data by class'] = df_conf_mat.sum(axis=1)       # クラスごとの合計を計算
@@ -288,23 +297,21 @@ def calc_conf_mat(MM_confusion_matrix):
     for j in range(5):
         for k in range(5):
             # 各要素ごとの確率を計算して格納
-            df_conf_mat_prob[j, k] = (df_conf_mat.iloc[j, k] / df_conf_mat.at[j, 'Number of test data by class']) * 100
+            df_conf_mat_prob[j, k] = df_conf_mat.iloc[j, k] / df_conf_mat.at[j, 'Number of test data by class']
 
-        # dataFrameに変換
+        # DataFrameに変換
         df_conf_mat_prob = pd.DataFrame(df_conf_mat_prob,
                                         columns=['ANG', 'JOY','NEU', 'SAD', 'SUR'],
                                         index=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
         # 精度を格納
-        df_conf_mat_prob.at['5', 'accuracy'] = sum(np.diag(df_conf_mat_prob)) / df_conf_mat.at['5', 'Number of test data by class']
-
-        print(df_conf_mat, '\n\n')
-        print(df_conf_mat_prob)
+        df_conf_mat_prob.at['5', 'accuracy'] = np.sum(np.diag(df_conf_mat_prob)) / df_conf_mat.at['5', 'Number of test data by class']
 
         # 保存
-        
-
-        # ここまで
+        now = datetime.datetime.now()       # 現在時刻を取得
+        now_str = now.strftime('%Y%m%d_%H%M%S')
+        df_conf_mat.to_csv("conf_mat/multimodal/confusion_matrix" + now_str + ".csv", sep=',')
+        df_conf_mat_prob.to_csv("conf_mat/multimodal/confusion_matrix_prob" + now_str + ".csv", sep=',')
 
 # ログを保存
 def save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit):
@@ -377,12 +384,12 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     result = np.empty((0, 5, 5))
 
     # 半教師あり学習と同数のデータで学習
-    #X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0, stratify=y_train)
+    X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
 
     #print("学習データ件数:", X1_sv.shape[0])  # type: ignore
     print("テストデータ件数:", X1_test.shape[0])
 
-    label_cnt = pd.DataFrame(y_train, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    label_cnt = pd.DataFrame(y_un, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
     print("\n学習データのクラスごとの件数")
     print("ANG", len(label_cnt.query('ANG == 1')))
@@ -403,10 +410,9 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
         #print("ラベル分布")
 
         # モデルを学習
-        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
+        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
 
         calc_conf_mat(MM_confusion_matrix)
-
 
         # 混同行列を格納
         conf_mat = np.reshape(MM_confusion_matrix, (1, 5, 5))
@@ -422,7 +428,7 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
     df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
-    # 
+    #calc_conf_mat(df_avg)
 
     print("\n", df_avg, "\n")
     print(df_var)
@@ -438,6 +444,15 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     print(X2_sv.shape)
     result = np.empty((0, 5, 5))
 
+    label_cnt = pd.DataFrame(y_sv, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+
+    print("\n学習データのクラスごとの件数")
+    print("ANG", len(label_cnt.query('ANG == 1')))
+    print("JOY", len(label_cnt.query('JOY == 1')))
+    print("NEU", len(label_cnt.query('NEU == 1')))
+    print("SAD", len(label_cnt.query('SAD == 1')))
+    print("SUR", len(label_cnt.query('SUR == 1')))
+
     # ラベルなしデータを読み込む
     sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
     tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
@@ -450,19 +465,15 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     un_X1 = np.append(X1_un, un_X1, axis=0)
     un_X2 = np.append(X2_un, un_X2, axis=0)
 
-    print(un_X1.shape)
+    print(X1_un.shape)
     print(un_X2.shape)
 
     data_cnt = un_X1.shape[0]   # データ件数
 
     # ループ回数等に関わる変数
-    ref_dara_range = 60
+    ref_dara_range = 100
     loop_times = data_cnt / ref_dara_range      # ループ回数
     last_loop = data_cnt - ref_dara_range       # TODO: ラベルなしデータの端数部を処理するための変数
-
-    # データの参照範囲
-    start = 0
-    end = ref_dara_range
 
     # 推定時のパラメータ
     batchsize = 256
@@ -479,6 +490,11 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         # 初回学習
         print("###初回学習を開始###")
         multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
+        calc_conf_mat(MM_confusion_matrix)
+
+        # 未ラベルデータの参照範囲
+        start = 0
+        end = ref_dara_range
 
         # 疑似ラベルの生成
         for j in range(int(loop_times)):
@@ -488,6 +504,8 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             #print("reliableness:", reliableness)
 
             # ラベルなしデータを推定
+            # BUG: 実験2回目2ループ目で例外エラー / 未ラベルデータの要素数を超えて参照したことが原因
+            # FIXME: 実験回ごとにstart, endの値をリセットする [修正済み, 未検証]
             MM_encoded = multimodal_model.predict(x=[un_X1[start:end][0:], un_X2[start:end][0:]], batch_size=batchsize)
 
             # 信頼度が高い順に20件のデータをピックアップ
@@ -496,10 +514,12 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
 
             for l in range(len(top20_index)):
                 temp_label[l][np.argmax(MM_encoded[top20_index[l]])] = 1
-
-            X1_train = np.append(X1_train, X1_un[top20_index], axis=0)      # 教師ありデータにスタック
-            X2_train = np.append(X2_train, X2_un[top20_index], axis=0)
+ 
+            X1_train = np.append(X1_train, un_X1[top20_index + start], axis=0)      # 教師ありデータにスタック
+            X2_train = np.append(X2_train, un_X2[top20_index + start], axis=0)
             y_train = np.append(y_train, temp_label,axis=0)
+
+            print(top20_index + start)
 
             # データをシャッフル
             np.random.seed(0)      # ランダムシード
@@ -512,13 +532,14 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             np.random.shuffle(y_train)
 
             print("追加データ数:", len(top20_index))
-            multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_conf_mat = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
+            multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
+
+            calc_conf_mat(MM_confusion_matrix)
 
             # 混同行列を格納
-            conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
+            conf_mat = np.reshape(MM_confusion_matrix, (1, 5, 5))
             result = np.append(result, conf_mat, axis=0)
 
-            # 次のループの参照範囲
             start = end + 1
             end += ref_dara_range
 
@@ -529,8 +550,10 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
     df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
+    calc_conf_mat(df_avg)
+
     print(df_avg)
-    print(df_var)
+    #print(df_var)
 
     save_log(multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit)
 
@@ -592,7 +615,7 @@ def main():
 
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
-        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.5, random_state=0, stratify=y_train)
+        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
 
         
         #semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
