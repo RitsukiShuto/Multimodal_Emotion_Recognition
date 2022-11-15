@@ -82,12 +82,11 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(110, activation='relu', name='classification_1')(concat)     # concat or maxpooling
+    classification = Dense(110, activation='relu', name='classification_1')(concat)
 
     classification = Dense(50, activation='relu', name='classification_2')(classification)
     classification = Dense(20, activation='relu', name='classification_3')(classification)
     classification = Dense(20, activation='relu', name='classification_4')(classification)
-
 
     classification = Dense(10, activation='relu', name='classification_5')(classification)
     #classification = MaxPool1D(pool_size=4, padding='same')(classification)
@@ -171,7 +170,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
 
     return multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix
 
-# モデルの評価
+# モデルの評価を行う関数
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data):
 
     X1_df = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0)
@@ -617,7 +616,6 @@ def main():
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
         X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
 
-        
         #semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
         semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X2_un, X2_test, y_train, y_sv, y_test, meta_data)
 
