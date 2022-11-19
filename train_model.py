@@ -55,13 +55,15 @@ def X2_encoder(X2_dim):
     #input_X2 = Input(batch_shape=(None, X2_dim), name='input_X2_DNN')
 
     hidden = Dense(300, activation='relu')(input_X2)
-    hidden = Dense(250, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(25, activation='relu')(hidden)
+    hidden = Dense(25, activation='relu')(hidden)
 
-    #z2 = Dense(100, activation='relu')(hidden)
+    #z2 = Dense(10, activation='relu')(hidden)
 
-    hidden = Conv1D(100, 2, padding='same', activation='relu')(hidden)
+    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
 
     z2 = Flatten()(hidden)
@@ -82,11 +84,11 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(110, activation='relu', name='classification_1')(concat)
+    classification = Dense(20, activation='relu', name='classification_1')(concat)
 
-    classification = Dense(50, activation='relu', name='classification_2')(classification)
-    classification = Dense(20, activation='relu', name='classification_3')(classification)
-    classification = Dense(20, activation='relu', name='classification_4')(classification)
+    classification = Dense(15, activation='relu', name='classification_2')(classification)
+    classification = Dense(15, activation='relu', name='classification_3')(classification)
+    classification = Dense(15, activation='relu', name='classification_4')(classification)
 
     classification = Dense(10, activation='relu', name='classification_5')(classification)
     #classification = MaxPool1D(pool_size=4, padding='same')(classification)
