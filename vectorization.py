@@ -69,8 +69,8 @@ def calc_TF_IDF_and_to_PCA(wakati_list):
     return pca.transform(val_tfidf.toarray())
 
 def main():
-    wav_dir = "data/wav/OGVC_vol1/all_data/"    # wavファイルのディレクトリ
-    save_dir = "train_data/OGVC_vol1/"          # 保存先
+    wav_dir = "data/wav/mixed/"             # wavファイルのディレクトリ
+    save_dir = "train_data/mixed/"          # 保存先
 
     # ベクトル化したデータを格納するための変数
     wakati_list = []
@@ -86,30 +86,34 @@ def main():
 
     LEN = 0             # LEN文字以上のデータを学習データとして使う
     SOUND_DIM = 64      # 音声の特徴量ベクトルはSOUND_DIM次元である
+    PICKUP_EMO_LV = [1, 2]
 
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
-    meta_data = pd.read_csv("data/OGVC_Vol1_supervised_4emo.csv", header=0)
+    meta_data = pd.read_csv("data/OGVC_mixed_M.csv", header=0)
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 音声データをパワースペクトルに変換
     # 言語データを分かち書き
     for row in meta_data.values:
-        if row[5] == "{笑}" and len(row[5]) < LEN:           # 声喩のみの発話とLEN文字以下の発話をスキップ
+        if len(row[3]) < LEN or row[4] not in PICKUP_EMO_LV:           # 声喩のみの発話とLEN文字以下の発話をスキップ
             print("[INFO]skip")
             cnt_skip_data += 1
 
-            break
-
-        wav_file_name = str(row[0]) + "_" + str(row[1])     # FFTを行うwavファイルを指定
+            continue
+        
+        if pd.isnull(row[1]):
+            wav_file_name = str(row[0])
+        else:
+            wav_file_name = str(row[0]) + "_" + str(int(row[1]))     # FFTを行うwavファイルを指定
 
         # パワースペクトルを計算
         pow_spectrum = calc_pow_spectrum(wav_dir + wav_file_name + ".wav", SOUND_DIM)
 
         # 分かち書きしてリストに追加
-        wakati_list.append(wakatigaki(str(row[5])))
+        wakati_list.append(wakatigaki(str(row[3])))
 
-        if pd.isnull(row[9]):       # ラベルなしデータ
+        if pd.isnull(row[5]):       # ラベルなしデータ
             print("[INFO]", wav_file_name, "is un labeled data.")     # DEBUG
 
             # データの先頭にファイル名を付けて、ラベルなしデータ群に追加
@@ -130,8 +134,8 @@ def main():
 
     # LEN文字以下の発話を除いたメタデータを生成
     new_meta = pd.DataFrame(new_meta)
-    new_meta.columns = ["fid", "no", "start", "end", "person", "text", "ans1", "ans2", "ans3", "emotion"]  # type: ignore
-    new_meta.to_csv("train_data/meta_data/LEN7_meta.csv", index=True, header=1)  # type: ignore
+    new_meta.columns = ['fid', 'no', 'person', 'text', 'lv', 'emotion']  # type: ignore
+    new_meta.to_csv("train_data/meta_data/mixed_meta.csv", index=True, header=1)  # type: ignore
 
     pca_tfidf = calc_TF_IDF_and_to_PCA(wakati_list)     # TF-IDFを計算
 
@@ -140,7 +144,7 @@ def main():
 
     i = 0
     for row in new_meta.values:
-        if pd.isnull(row[9]):
+        if pd.isnull(row[5]):
             tfidf_unlabeled.append(pca_tfidf[i][0:])
 
         else:
