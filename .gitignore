@@ -5,7 +5,7 @@ vector
 dbg_documents
 evaluate_japanese_w2v
 .vscode/*.json
-test/doc/jwsan-2145.csv
+sample_code
 semi_cca_cpy.py
 semi_cca.py
 model_loss.png
