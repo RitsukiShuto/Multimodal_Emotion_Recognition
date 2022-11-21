@@ -31,8 +31,9 @@ def X1_encoder(X1_dim):
     input_X1 = Input(shape=(X1_dim, 1), name="input_X1")
     #input_X1 = Input(batch_shape=(None, X1_dim), name='input_X1_DNN')
 
-    hidden = Dense(16, activation='relu')(input_X1)
-    hidden = Dense(12, activation='relu')(hidden)
+    hidden = Dense(32, activation='relu')(input_X1)
+    hidden = Dense(32, activation='relu')(input_X1)
+    hidden = Dense(16, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
 
     #z1 = Dense(10, activation='relu')(hidden)
