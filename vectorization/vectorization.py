@@ -39,6 +39,7 @@ def calc_pow_spectrum(wav_file, size):
     fs = 44100                      # サンプリングレート
 
     wave = load_wav(wav_file)
+
     # 切り出した波形データ(np.hamming(size) * wave[st:st+size])にFFTを行う
     return abs(np.fft.fft(np.hamming(size) * wave[st:st+size])) ** 2
 
@@ -84,13 +85,13 @@ def main():
     cnt_UNlabeled_data = 0
     cnt_labeled_data = 0
 
-    LEN = 0             # LEN文字以上のデータを学習データとして使う
-    SOUND_DIM = 64      # 音声の特徴量ベクトルはSOUND_DIM次元である
-    PICKUP_EMO_LV = [1, 2]
+    LEN = 0                     # LEN文字以上のデータを学習データとして使う
+    SOUND_DIM = 350             # 音声の特徴量ベクトルはSOUND_DIM次元である
+    PICKUP_EMO_LV = [2, 3, 9]   # 学習に使う感情レベル 9は自発対話音声
 
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
-    meta_data = pd.read_csv("data/OGVC_mixed_M.csv", header=0)
+    meta_data = pd.read_csv("data/MOY_mixed_metadata.csv", header=0)
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 音声データをパワースペクトルに変換
@@ -135,7 +136,7 @@ def main():
     # LEN文字以下の発話を除いたメタデータを生成
     new_meta = pd.DataFrame(new_meta)
     new_meta.columns = ['fid', 'no', 'person', 'text', 'lv', 'emotion']  # type: ignore
-    new_meta.to_csv("train_data/meta_data/mixed_meta.csv", index=True, header=1)  # type: ignore
+    new_meta.to_csv("train_data/meta_data/MOY_mixed_meta.csv", index=True, header=1)  # type: ignore
 
     pca_tfidf = calc_TF_IDF_and_to_PCA(wakati_list)     # TF-IDFを計算
 
