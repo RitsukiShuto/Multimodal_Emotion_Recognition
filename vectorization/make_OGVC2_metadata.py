@@ -53,7 +53,7 @@ def main():
 
         # 演者ごとに保存
         save_dir = 'data/' + actor + '_mixed_metadata.csv'
-        concat.to_csv(save_dir, header=1, index=0)
+        concat.to_csv(save_dir, header=1, index=0)                      # type: ignore
 
 if __name__ == '__main__':
     main() 
