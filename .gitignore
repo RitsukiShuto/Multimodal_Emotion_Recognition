@@ -15,3 +15,8 @@ models
 test.py
 predict_log
 conf_mat
+modules/__pycache__/*
+__pycache__/main.cpython-38.pyc
+__pycache__/model.cpython-38.pyc
+__pycache__/semi_supervised_learning.cpython-38.pyc
+__pycache__/supervised_learning.cpython-38.pyc
