@@ -9,7 +9,8 @@ import tensorflow as tf
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 
-import supervised_learning, semi_supervised_learning
+from modules.supervised_learning import supervised_learning
+from modules.semi_supervised_learning import semi_supervised_learning
 
 def main():
     # データを読み込む
@@ -18,21 +19,21 @@ def main():
 
     # ラベル整形
     ohe = OneHotEncoder(sparse=False)
-    labels = ohe.get_feature_names(['emotion'])
-    ohe = ohe.fit_transform(meta_data[['emotion']].values)
-    labels = pd.DataFrame(ohe, columns=labels, dtype=np.int8)
+    encoded = ohe.fit_transform(meta_data[['emotion']].values)
+    label = ohe.get_feature_names(['emotion'])
+    label_list = pd.DataFrame(encoded, columns=label, dtype=np.int8)
 
     # 教師ありデータを読み込む
-    labeled_X = pd.read_csv("train_data/mixed/MFCC_labeled.csv", header=0, index_col=0)
+    labeled_X = pd.read_csv("train_data/mixed/POW_labeled.csv", header=0, index_col=0)
     labeled_Y = pd.read_csv("train_data/mixed/TF-IDF_labeled.csv", header=0, index_col=0)
 
     # ndarrayに変換
     X = labeled_X.to_numpy()
     Y = labeled_Y.to_numpy()
-    Z = labels.to_numpy()
+    Z = label_list.to_numpy()
 
     # データを分割
-    X_train, X_text, Y_train, Y_test, Z_train, Z_test = train_test_split(X, Y, Z, test_size=0.2, random_state=0, stratify=0)
+    X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(X, Y, Z, shuffle=True, test_size=0.2, random_state=0, stratify=Z)
 
     # 実行するモードを選択
     print("\n--\n実行する学習を選択")
@@ -41,15 +42,15 @@ def main():
 
     if choice == '0':       # 教師あり学習
         print("run supervised learning")
-        supervised_learning()
+        supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test)
 
     elif choice == '1':     # 半教師あり学習
         print("run semi supervised learning")
-        semi_supervised_learning()
+        semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test)
 
     else:       # Error
         print("error")
         main()
 
-if __name__ == "__main":
+if __name__ == "__main__":
     main()
