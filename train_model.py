@@ -530,6 +530,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
         print(result)
 
     avg_conf_mat = np.average(result, axis=0)
+    
     #var_conf_mat = np.var(result, axis=0)
 
     # 配列をDataFrameに変換
