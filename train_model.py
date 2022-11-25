@@ -31,9 +31,10 @@ def X1_encoder(X1_dim):
     input_X1 = Input(shape=(X1_dim, 1), name="input_X1")
     #input_X1 = Input(batch_shape=(None, X1_dim), name='input_X1_DNN')
 
-    hidden = Dense(16, activation='relu')(input_X1)
-    hidden = Dense(12, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(input_X1)
     hidden = Dense(10, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
+    #hidden = Dense(8, activation='relu')(hidden)
 
     #z1 = Dense(10, activation='relu')(hidden)
 
@@ -55,13 +56,15 @@ def X2_encoder(X2_dim):
     #input_X2 = Input(batch_shape=(None, X2_dim), name='input_X2_DNN')
 
     hidden = Dense(300, activation='relu')(input_X2)
-    hidden = Dense(250, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(100, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
+    hidden = Dense(25, activation='relu')(hidden)
+    hidden = Dense(25, activation='relu')(hidden)
 
-    #z2 = Dense(100, activation='relu')(hidden)
+    #z2 = Dense(10, activation='relu')(hidden)
 
-    hidden = Conv1D(100, 2, padding='same', activation='relu')(hidden)
+    hidden = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     hidden = MaxPool1D(pool_size=2, padding='same')(hidden)
 
     z2 = Flatten()(hidden)
@@ -82,11 +85,11 @@ def classification_layer(input_X1, input_X2, z1, z2):
     concat = Concatenate()([z1, z2])
 
     # 分類層
-    classification = Dense(110, activation='relu', name='classification_1')(concat)
+    classification = Dense(20, activation='relu', name='classification_1')(concat)
 
-    classification = Dense(50, activation='relu', name='classification_2')(classification)
-    classification = Dense(20, activation='relu', name='classification_3')(classification)
-    classification = Dense(20, activation='relu', name='classification_4')(classification)
+    classification = Dense(15, activation='relu', name='classification_2')(classification)
+    classification = Dense(15, activation='relu', name='classification_3')(classification)
+    classification = Dense(10, activation='relu', name='classification_4')(classification)
 
     classification = Dense(10, activation='relu', name='classification_5')(classification)
     #classification = MaxPool1D(pool_size=4, padding='same')(classification)
@@ -123,8 +126,8 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
     x2_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     # epochsとbatch_size
-    epochs = 250        # 学習用パラメータ(デフォルトはe=250, b=64)
-    batch_size = 256
+    epochs = 500        # 学習用パラメータ(デフォルトはe=250, b=64)
+    batch_size = 64
 
     early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
 
@@ -170,7 +173,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
 
     return multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix
 
-# モデルの評価を行う関数
+# モデルの評価
 def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data):
 
     X1_df = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0)
@@ -280,9 +283,6 @@ def evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, 
     df2 = df2.sort_values(by=["file name", "f_num"])
     df2.to_csv("predict_log/correct_ans_list_" + now.strftime('%Y%m%d_%H%M') + ".csv")
 
-        # TODO: 単一モーダルのモデル用を追加する
-        # TODO: 各ラベルの確率で出力する
-
     return MM_confusion_matrix
 
 # 混同行列の整形, 保存
@@ -383,12 +383,12 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     result = np.empty((0, 5, 5))
 
     # 半教師あり学習と同数のデータで学習
-    X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
+    #X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
 
     #print("学習データ件数:", X1_sv.shape[0])  # type: ignore
     print("テストデータ件数:", X1_test.shape[0])
 
-    label_cnt = pd.DataFrame(y_un, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    label_cnt = pd.DataFrame(y_train, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
     print("\n学習データのクラスごとの件数")
     print("ANG", len(label_cnt.query('ANG == 1')))
@@ -402,14 +402,8 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
     for i in range(10):
         print("\nループ回数:", i+1, "\n")
 
-        # データを表示
-        #print("データ件数:")
-        #print("X1 次元数:")
-        #print("X2 次元数")
-        #print("ラベル分布")
-
         # モデルを学習
-        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_sv, X2_sv, y_sv, X1_test, X2_test, y_test, meta_data)
+        multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
 
         calc_conf_mat(MM_confusion_matrix)
 
@@ -439,11 +433,9 @@ def supervised_learning(X1_train, X1_test, X2_train, X2_test, y_train, y_test, m
 def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X2_un, X2_test, y_train, y_sv, y_test, meta_data):          # すべてのデータで学習
     print("semi supervised learning")       # DEBUG
 
-    # 
-    print(X2_sv.shape)
-    result = np.empty((0, 5, 5))
-
     label_cnt = pd.DataFrame(y_sv, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+
+    print(f"教師ありデータ:{X1_sv.shape[0]}\n教師なしデータ:{X1_un.shape[0]}")
 
     print("\n学習データのクラスごとの件数")
     print("ANG", len(label_cnt.query('ANG == 1')))
@@ -453,8 +445,8 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     print("SUR", len(label_cnt.query('SUR == 1')))
 
     # ラベルなしデータを読み込む
-    sound_un_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_un_labeled.csv", header=0, index_col=0)
-    tfidf_un_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_un_labeled.csv", header=0, index_col=0)
+    sound_un_labeled_X1 = pd.read_csv("train_data/mixed/MFCC_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/mixed/TF-IDF_un_labeled.csv", header=0, index_col=0)
 
     # データを変換
     un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
@@ -464,12 +456,8 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     un_X1 = np.append(X1_un, un_X1, axis=0)
     un_X2 = np.append(X2_un, un_X2, axis=0)
 
-    print(X1_un.shape)
-    print(un_X2.shape)
-
-    data_cnt = un_X1.shape[0]   # データ件数
-
     # ループ回数等に関わる変数
+    data_cnt = un_X1.shape[0]   # データ件数
     ref_dara_range = 100
     loop_times = data_cnt / ref_dara_range      # ループ回数
     last_loop = data_cnt - ref_dara_range       # TODO: ラベルなしデータの端数部を処理するための変数
@@ -477,14 +465,11 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     # 推定時のパラメータ
     batchsize = 256
     reliableness = 0.3
-        
-    print("教師なしデータ")
-    print("unX1:", np.shape(un_X1))
-    print("unX2:", np.shape(un_X2))
 
-    for i in range(1):
+    for i in range(10):
 
         print("\nループ回数:", i+1, "\n")
+        result = []
 
         # 初回学習
         print("###初回学習を開始###")
@@ -500,11 +485,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             print(j+1, "/", int(loop_times))
             print(start, "to", end)
 
-            #print("reliableness:", reliableness)
-
             # ラベルなしデータを推定
-            # BUG: 実験2回目2ループ目で例外エラー / 未ラベルデータの要素数を超えて参照したことが原因
-            # FIXME: 実験回ごとにstart, endの値をリセットする [修正済み, 未検証]
             MM_encoded = multimodal_model.predict(x=[un_X1[start:end][0:], un_X2[start:end][0:]], batch_size=batchsize)
 
             # 信頼度が高い順に20件のデータをピックアップ
@@ -521,7 +502,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             print(top20_index + start)
 
             # データをシャッフル
-            np.random.seed(0)      # ランダムシード
+            np.random.seed(0)               # ランダムシードを固定
             np.random.shuffle(X1_train)     # シャッフル
 
             np.random.seed(0)
@@ -533,21 +514,28 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
             print("追加データ数:", len(top20_index))
             multimodal_model, x1_single_model, x2_single_model, multimodal_fit, x1_fit, x2_fit, MM_confusion_matrix = model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data)
 
-            calc_conf_mat(MM_confusion_matrix)
-
-            # 混同行列を格納
-            conf_mat = np.reshape(MM_confusion_matrix, (1, 5, 5))
-            result = np.append(result, conf_mat, axis=0)
+            #calc_conf_mat(MM_confusion_matrix)
 
             start = end + 1
             end += ref_dara_range
 
+        # 未知のデータでテスト
+        MM_confusion_matrix = evaluate_model(multimodal_model, x1_single_model, x2_single_model, X1_test, X2_test, y_test, meta_data)
+
+        # 混同行列を格納
+        MM_confusion_matrix = np.reshape(MM_confusion_matrix, (1, 5, 5))
+        result = np.append(result, MM_confusion_matrix, axis=0)
+
+        print(f"{i}/10 reslut")
+        print(result)
+
     avg_conf_mat = np.average(result, axis=0)
-    var_conf_mat = np.var(result, axis=0)
+    
+    #var_conf_mat = np.var(result, axis=0)
 
     # 配列をDataFrameに変換
     df_avg = pd.DataFrame(avg_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
-    df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
+    #df_var = pd.DataFrame(var_conf_mat, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])
 
     calc_conf_mat(df_avg)
 
@@ -559,7 +547,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
-    meta_data = pd.read_csv("train_data/meta_data/LEN7_meta.csv", header=0)  # INFO: OGVC_vol.1
+    meta_data = pd.read_csv("train_data/meta_data/MOY_mixed_meta.csv", header=0)  # INFO: OGVC_vol.1
     #meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
     supervised_meta = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
@@ -573,8 +561,8 @@ def main():
     
     # 教師ありデータの読み込み
     # INFO: OGVC_vol.1
-    sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol1/POW_labeled.csv", header=0, index_col=0)
-    tfidf_labeled_X2 = pd.read_csv("train_data/OGVC_vol1/TF-IDF_labeled.csv", header=0, index_col=0)
+    sound_labeled_X1 = pd.read_csv("train_data/mixed/MFCC_labeled.csv", header=0, index_col=0)
+    tfidf_labeled_X2 = pd.read_csv("train_data/mixed/TF-IDF_labeled.csv", header=0, index_col=0)
 
     # INFO OGVC_vol.2
     #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_all.csv", header=0, index_col=0)
@@ -587,15 +575,6 @@ def main():
 
     # データを分割
     X1_train, X1_test, X2_train, X2_test, y_train, y_test = train_test_split(X1, X2, y, shuffle=True, test_size=0.2, random_state=0, stratify=y)
-
-    # データを標準化
-    #x_mean = X1.mean(keepdims=True)
-    #x_std = X1.std(keepdims=True)
-    #X1 = (X1 - x_mean)/(x_std)
-
-    #x_min = X2.min(keepdims=True)
-    #x_max = X2.max(keepdims=True)
-    #X2 = (X2 - x_min)/(x_max - x_min) 
 
     # モードを選択
     print("\n--\nSelect a function to execute")
@@ -614,7 +593,7 @@ def main():
 
     elif mode == '1':       # 半教師ありマルチモーダル学習
         # TODO: モデルの読み込みとデータ分割の関数を作ってもいいかも
-        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.7, random_state=0, stratify=y_train)
+        X1_sv, X1_un, X2_sv, X2_un, y_sv, y_un = train_test_split(X1_train, X2_train, y_train, shuffle=True, test_size=0.8, random_state=0, stratify=y_train)
 
         #semi_supervised_learning(multimodal_model, X1_train, X1_test, X2_train, X2_test, y_train, y_test, meta_data)
         semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X2_un, X2_test, y_train, y_sv, y_test, meta_data)

@@ -1,3 +1,4 @@
+
 OGVC
 train_data
 data
@@ -5,7 +6,7 @@ vector
 dbg_documents
 evaluate_japanese_w2v
 .vscode/*.json
-test/doc/jwsan-2145.csv
+sample_code
 semi_cca_cpy.py
 semi_cca.py
 model_loss.png
@@ -15,3 +16,8 @@ models
 test.py
 predict_log
 conf_mat
+modules/__pycache__/*
+__pycache__/main.cpython-38.pyc
+__pycache__/model.cpython-38.pyc
+__pycache__/semi_supervised_learning.cpython-38.pyc
+__pycache__/supervised_learning.cpython-38.pyc
