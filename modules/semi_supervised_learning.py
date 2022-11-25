@@ -12,7 +12,7 @@ from modules.evaluate_model import calc_score
 
 def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/MFCC_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/POW_un_labeled.csv", header=0, index_col=0)
     un_labeled_V = pd.read_csv("train_data/mixed/TF-IDF_un_labeled.csv", header=0, index_col=0)
 
     # データを変換
@@ -20,13 +20,13 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     un_labeled_V = un_labeled_V.to_numpy()
 
     X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(
-        X_train, Y_train, Z_train, shuffle=True, test_size=0.8, random_state=0, stratify=Z_train)
+        X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
     U_train = np.append(U_train, un_labeled_U, axis=0)
     V_train = np.append(V_train, un_labeled_V, axis=0)
 
-    print(f"教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}")
+    print(f"教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}")  # type: ignore
 
     # ループ回数等に関わる変数
     data_cnt = U_train.shape[0]   # データ件数
@@ -36,20 +36,22 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
 
     batch_size = 64
 
+    conf_mats = []
+
     for i in range(10):
-        print(f"{i}/10")
+        print(f"実験回数:{i+1}/10")
 
         start = 0       # 未ラベルデータの参照範囲
         end = ref_dara_range
 
         epochs = 250
-        conf_mats = []
 
         # 初回学習
         multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
+        calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
 
         for j in range(int(loop_times)):
-            print(j+1, "/", int(loop_times))
+            print(f"{j+1}/{int(loop_times)}")
             print(start, "to", end)
 
             # ラベルなしデータを推定
@@ -58,6 +60,16 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             # 信頼度が高い順に20件のデータをピックアップ
             top20_index = np.argpartition(np.max(MM_encoded, axis=1), -20)[-20:]
             temp_label = np.zeros((20, 5), dtype=int)
+
+            # 仮ラベルの信頼度と実際のラベルを表示
+            correct = 0
+            for k in range(len(top20_index)):
+                print(f"{top20_index[k] + start}\t{np.argmax(MM_encoded[top20_index[k]])}\t{np.max(MM_encoded[top20_index[k]])}\t{np.argmax(W_train[top20_index[k] + start])}")
+
+                if np.argmax(MM_encoded[top20_index[k]]) == np.argmax(W_train[top20_index[k] + start]):
+                    correct += 1
+
+            print(f"仮ラベル正解率: {correct / 20}")
 
             # 仮ラベル付け
             for l in range(len(top20_index)):
@@ -77,15 +89,15 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             np.random.seed(0)
             np.random.shuffle(Z_train)
 
-            multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
-            calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
-
             start = end + 1
             end += ref_dara_range
             epochs += 100
 
-        MM_conf_mat = calc_score(
-            multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
+            # 学習
+            multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
+            calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+
+        MM_conf_mat = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
 
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats = np.append(conf_mats, MM_conf_mat, axis=0)

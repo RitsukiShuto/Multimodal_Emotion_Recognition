@@ -107,16 +107,14 @@ def Y_encoder(Y_dim):
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
 
-# 分類層
     classification = Dense(20, activation='relu')(concat)
     classification = Dense(15, activation='relu')(classification)
     classification = Dense(15, activation='relu')(classification)
     classification = Dense(10, activation='relu')(classification)
     classification = Dense(10, activation='relu')(classification)
 
-    # 出力層
-    classification_output = Dropout(0.5)(classification)
-    output = Dense(5, activation='softmax', name='output_layer')(classification_output)
+    classification = Dropout(0.5)(classification)
+    output = Dense(5, activation='softmax', name='output_layer')(classification)
 
     multimodal_model = Model([X_input, Y_input], output)
 
