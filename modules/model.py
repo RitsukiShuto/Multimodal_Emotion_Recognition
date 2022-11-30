@@ -35,13 +35,13 @@ def model_fit(X_train, Y_train, Z_train, epochs):
 
     # 学習
     fit_multimodal_model = multimodal_model.fit(x=[X_train, Y_train],
-                                                    y=Z_train,
-                                                    validation_split=0.2,
-                                                    batch_size=batch_size,
-                                                    epochs=epochs,
-                                                    callbacks=[early_stopping],
-                                                    verbose=0  # type: ignore
-                                                    )
+                                                y=Z_train,
+                                                validation_split=0.2,
+                                                batch_size=batch_size,
+                                                epochs=epochs,
+                                                callbacks=[early_stopping],
+                                                verbose=0  # type: ignore
+                                                )
 
     fit_X_single_model = X_single_model.fit(x=X_train, y=Z_train,
                                             validation_split=0.2,
