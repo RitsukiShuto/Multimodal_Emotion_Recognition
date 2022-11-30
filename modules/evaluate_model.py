@@ -8,8 +8,6 @@ from sklearn.metrics import confusion_matrix
 
 def calc_score(model_MM, model_X, model_Y, X_test, Y_test, Z_test):
     # テストデータで推定する
-    # BUG: predictができない
-    # 関数間で値を渡しているからかも
     pred_MM = model_MM.predict(x=[X_test, Y_test])
     pred_X1 = model_X.predict(X_test)
     pred_X2 = model_Y.predict(Y_test)
@@ -35,3 +33,6 @@ def calc_score(model_MM, model_X, model_Y, X_test, Y_test, Z_test):
     print(f"Y 単一モデル\ntest loss:{Y_score[0]}\ntest accuracy:{Y_score[1]}\n\n")
 
     return MM_conf_mat
+
+def calc_conf_mat(conf_mats):
+    avg_conf_mat = np.average(conf_mats, axis=0)
