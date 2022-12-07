@@ -73,7 +73,7 @@ def X_encoder(X_dim):
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     X_feature = Flatten()(conv)
-    X_feature = Dropout(0.5)(X_feature)
+    #X_feature = Dropout(0.5)(X_feature)
 
     # 単一モダリティ用の分類層
     classification = Dense(5, activation='softmax')(X_feature)
@@ -84,18 +84,15 @@ def X_encoder(X_dim):
 def Y_encoder(Y_dim):
     Y_input = Input(shape=(Y_dim, 1))
 
-    hidden = Dense(300, activation='relu')(Y_input)
+    hidden = Dense(200, activation='relu')(Y_input)
     hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(100, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
-    hidden = Dense(25, activation='relu')(hidden)
-    hidden = Dense(25, activation='relu')(hidden)
+    hidden = Dense(200, activation='relu')(hidden)
 
     conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     Y_feature = Flatten()(conv)
-    Y_feature = Dropout(0.5)(Y_feature)
+    #Y_feature = Dropout(0.5)(Y_feature)
 
     # 単一モダリティ用の分類層
     classification = Dense(5, activation='softmax')(Y_feature)
