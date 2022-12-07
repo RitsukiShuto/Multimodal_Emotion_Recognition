@@ -3,6 +3,8 @@
 # テストデータでモデルのテストを行う
 #
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix
 
@@ -34,5 +36,22 @@ def calc_score(model_MM, model_X, model_Y, X_test, Y_test, Z_test):
 
     return MM_conf_mat
 
-def calc_conf_mat(conf_mats):
-    avg_conf_mat = np.average(conf_mats, axis=0)
+def calc_conf_mat(conf_mats, experiment_times):
+    prob_conf_mats = np.zeros((experiment_times, 5, 5))
+
+    # 確率を計算
+    for i in range(experiment_times):
+        for j in range(5):
+            for k in range(5):
+                prob_conf_mats[i][j][k] = conf_mats[i][j][k] / sum(conf_mats[i, j, :])
+
+    prob_avg_conf_mat = np.average(prob_conf_mats, axis=0)
+    num_avg_conf_mat = np.average(conf_mats, axis=0)
+
+    
+
+    print(prob_avg_conf_mat)
+    print(num_avg_conf_mat)
+
+    return prob_avg_conf_mat
+
