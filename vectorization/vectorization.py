@@ -51,12 +51,11 @@ def calc_MFCC(wav_file):
 
     return mfcc.mean(axis=1)
 
-
 # 分かち書き
 def wakatigaki(sentence):
     # 記号を削除
     code_regex = re.compile('[\t\s\n!"#$%&\'\\\\()*+,-./:;；：<=>?@[\\]^_`{|}~○｢｣「」〔〕“”〈〉笑、。'\
-                            '『』【】＆＊（）＄＃＠？！｀＋￥¥％♪…◇→←↓↑｡･ω･｡ﾟ´∀｀ΣДｘ⑥◎©︎♡★☆▽※ゞノ〆εσ＞＜┌┘]')
+                            '『』【】＆＊（）＄＃＠？?！!｀＋￥¥％♪…◇→←↓↑｡･ω･｡ﾟ´∀｀ΣДｘ⑥◎©︎♡★☆▽※ゞノ〆εσ＞＜┌┘]')
     sentence = code_regex.sub('', sentence)
 
     # 分かち書き
@@ -110,7 +109,7 @@ def main():
     # 音声データをパワースペクトルに変換
     # 言語データを分かち書き
     for row in meta_data.values:
-        if len(row[3]) < LEN or row[4] not in PICKUP_EMO_LV:           # 声喩のみの発話とLEN文字以下の発話をスキップ
+        if row[3] == "{笑}" or len(row[3]) < LEN or row[4] not in PICKUP_EMO_LV:           # 声喩のみの発話とLEN文字以下の発話をスキップ
             print("[INFO]skip")
             cnt_skip_data += 1
 
