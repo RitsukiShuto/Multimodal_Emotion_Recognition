@@ -10,18 +10,15 @@ import os
 from sklearn.model_selection import train_test_split
 
 from modules.model import model_fit
-from modules.evaluate_model import calc_score, calc_conf_mat
+from modules.utils import calc_score, calc_conf_mat, save_fig
 
 def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     # ログを保存
     # 現在時刻を文字列として格納
     now = datetime.datetime.now()       # 現在時刻を取得
     time = now.strftime('%Y%m%d_%H%M')
-
-    make_dir = "train_log/semi_supervised/" + time
-
-    # 現在時刻のディレクトリを作成
-    os.mkdir(make_dir)
+    save_dir = "train_log/semi_supervised/" + time
+    os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
     un_labeled_U = pd.read_csv("train_data/mixed/POW_un_labeled.csv", header=0, index_col=0)
@@ -62,9 +59,6 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
         multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
         calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
 
-        make_dir = make_dir + "/" + str(i + 1) + "-" + "0"
-        os.mkdir(make_dir)
-
         # ラベルなしデータを推定して仮ラベルを付与する
         for j in range(int(loop_times) + 1):
             print(f"{j+1}/{int(loop_times)}")
@@ -82,7 +76,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             
             for k in range(len(topN_index)):
                 # ラベルなしデータかどうかを判別
-                if len(W_train) < topN_index[k] + start:
+                if len(W_train) <= topN_index[k] + start:
                     print(f"{topN_index[k] + start}\t{np.argmax(MM_encoded[topN_index[k]])}\t{np.max(MM_encoded[topN_index[k]])}\tNULL")
 
                 else:
@@ -118,13 +112,16 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             else:
                 end += ref_dara_range
 
-            epochs += 150
+            epochs += 50
 
-            multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
+            multimodal_model, X_single_model, Y_single_model, history_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
             calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+
+            # lossとaccuracyのグラフを保存
+            save_fig(save_dir, multimodal_model, history_MM, i+1, j+1)
 
         MM_conf_mat = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
-    prob_conf_mats = calc_conf_mat(conf_mats, experiment_times)
+    calc_conf_mat(conf_mats, experiment_times, save_dir)
