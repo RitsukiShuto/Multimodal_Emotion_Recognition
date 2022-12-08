@@ -31,12 +31,12 @@ def model_fit(X_train, Y_train, Z_train, epochs):
 
     batch_size = 64
 
-    early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
+    early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
 
     # 学習
     fit_multimodal_model = multimodal_model.fit(x=[X_train, Y_train],
                                                 y=Z_train,
-                                                validation_split=0.2,
+                                                #validation_split=0.2,
                                                 batch_size=batch_size,
                                                 epochs=epochs,
                                                 callbacks=[early_stopping],
@@ -44,7 +44,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
                                                 )
 
     fit_X_single_model = X_single_model.fit(x=X_train, y=Z_train,
-                                            validation_split=0.2,
+                                            #validation_split=0.2,
                                             batch_size=batch_size,
                                             epochs=epochs,
                                             callbacks=[early_stopping],
@@ -52,7 +52,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
                                             )
 
     fit_Y_single_model = Y_single_model.fit(x=Y_train, y=Z_train,
-                                            validation_split=0.2,
+                                            #validation_split=0.2,
                                             batch_size=batch_size,
                                             epochs=epochs,
                                             callbacks=[early_stopping],
