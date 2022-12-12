@@ -25,7 +25,7 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     print(f"\n学習データ件数:{X_train.shape[0]}\nテストデータ件数:{Y_test.shape[0]}\n")  # type: ignore
 
     epochs = 250
-    experiment_times = 1    # 実験回数
+    experiment_times = 10    # 実験回数
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 
@@ -35,14 +35,16 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
         # 学習
         multimodal_model, X_single_model, Y_single_model, history_MM, history_X, history_Y = model_fit(X_train, Y_train, Z_train, epochs)
 
-        # lossとaccuracyのグラフを保存
-        save_fig(save_dir, multimodal_model, history_MM, i+1, cnt=0)
-
         # 精度を計算
-        MM_conf_mat = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
+        MM_conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
+        df1, df2 = calc_conf_mat(MM_conf_mat, None)
+
+        # lossとaccuracyのグラフを保存
+        save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, i+1, 0)
 
         # 混同行列を計算
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
-    calc_conf_mat(conf_mats, experiment_times, save_dir)
+    df1, df2 = calc_conf_mat(conf_mats, experiment_times)
+    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 99, 0)
