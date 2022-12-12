@@ -26,11 +26,16 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.5, random_state=0, stratify=Z_train)
+    #X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
-    U_train = np.append(U_train, un_labeled_U, axis=0)
-    V_train = np.append(V_train, un_labeled_V, axis=0)
+    #U_train = np.append(U_train, un_labeled_U, axis=0)
+    #V_train = np.append(V_train, un_labeled_V, axis=0)
+
+    # ラベルなしデータのみを扱う際は以下の2行をコメントアウトせよ
+    U_train = un_labeled_U
+    V_train = un_labeled_V
+    W_train = []
 
     print(f"\n教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}\n")  # type: ignore
 
@@ -52,6 +57,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
 
         start = 0       # 未ラベルデータの参照範囲
         end = ref_dara_range
+        accuracy_trend = []
 
         epochs = 250
 
@@ -86,7 +92,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
                     if np.argmax(MM_encoded[topN_index[k]]) == np.argmax(W_train[topN_index[k] + start]):
                         correct += 1
 
-            print(f"仮ラベル正解率: {correct / -(data_count_to_add)}")
+            #print(f"仮ラベル正解率: {correct / -(data_count_to_add)}")
 
             # 仮ラベル付け
             for l in range(len(topN_index)):
@@ -115,13 +121,19 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             epochs += 50
 
             multimodal_model, X_single_model, Y_single_model, history_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
-            calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+            conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+
+            accuracy_trend.append(accuracy)
 
             # lossとaccuracyのグラフを保存
-            save_fig(save_dir, multimodal_model, history_MM, i+1, j+1)
+            df1, df2 = calc_conf_mat(conf_mat, None)
+            save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, i+1, j+1)
 
-        MM_conf_mat = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
+        MM_conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
+        save_fig(save_dir, multimodal_model, history_MM, accuracy_trend, df1, df2, i+1, 0)
+        
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
-    calc_conf_mat(conf_mats, experiment_times, save_dir)
+    df1, df2 = calc_conf_mat(conf_mats, experiment_times)
+    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 99, 0)
