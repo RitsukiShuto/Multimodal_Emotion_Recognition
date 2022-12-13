@@ -26,16 +26,16 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
-    #X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0, random_state=0, stratify=Z_train)
+    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.5, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
-    #U_train = np.append(U_train, un_labeled_U, axis=0)
-    #V_train = np.append(V_train, un_labeled_V, axis=0)
+    U_train = np.append(U_train, un_labeled_U, axis=0)
+    V_train = np.append(V_train, un_labeled_V, axis=0)
 
-    # ラベルなしデータのみを扱う際は以下の2行をコメントアウトせよ
-    U_train = un_labeled_U
-    V_train = un_labeled_V
-    W_train = []
+    # ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
+    #U_train = un_labeled_U
+    #V_train = un_labeled_V
+    #W_train = []
 
     print(f"\n教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}\n")  # type: ignore
 
@@ -66,8 +66,8 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
         calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
 
         # ラベルなしデータを推定して仮ラベルを付与する
-        for j in range(int(loop_times) + 1):
-            print(f"{j+1}/{int(loop_times)}")
+        for j in range(int(loop_times)+1):
+            print(f"{j+1}/{int(loop_times)+1}")
             print(start, "to", end)
 
             # ラベルなしデータを推定
@@ -131,7 +131,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
 
         MM_conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
         save_fig(save_dir, multimodal_model, history_MM, accuracy_trend, df1, df2, i+1, 0)
-        
+
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
