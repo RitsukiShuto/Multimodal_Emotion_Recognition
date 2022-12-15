@@ -20,12 +20,12 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     os.mkdir(save_dir)
 
     # データを分割
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.5, random_state=0, stratify=Z_train)
+    #X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.77, random_state=0, stratify=Z_train)
 
     print(f"\n学習データ件数:{X_train.shape[0]}\nテストデータ件数:{Y_test.shape[0]}\n")  # type: ignore
 
     epochs = 250
-    experiment_times = 10    # 実験回数
+    experiment_times = 1    # 実験回数
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 

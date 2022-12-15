@@ -21,12 +21,12 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/TF-IDF_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/1_POW_un_labeled.csv", header=0, index_col=0)
+    un_labeled_V = pd.read_csv("train_data/mixed/1_TF-IDF_un_labeled.csv", header=0, index_col=0)
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.5, random_state=0, stratify=Z_train)
+    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.77, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
     U_train = np.append(U_train, un_labeled_U, axis=0)
@@ -41,14 +41,14 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
 
     # ループ回数等に関わる変数
     data_cnt = U_train.shape[0]   # データ件数
-    ref_dara_range = 200
+    ref_dara_range = 100
     loop_times = data_cnt / ref_dara_range      # ループ回数
 
-    data_count_to_add = -30
+    data_count_to_add = -20
 
     # 実験回数
     experiment_times = 1
-    batch_size = 64
+    batch_size = 256
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 
@@ -92,7 +92,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
                     if np.argmax(MM_encoded[topN_index[k]]) == np.argmax(W_train[topN_index[k] + start]):
                         correct += 1
 
-            #print(f"仮ラベル正解率: {correct / -(data_count_to_add)}")
+            print(f"仮ラベル正解率: {correct / -(data_count_to_add)}")
 
             # 仮ラベル付け
             for l in range(len(topN_index)):
@@ -113,7 +113,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             np.random.shuffle(Z_train)
 
             start = end + 1
-            if i == int(loop_times):
+            if j == int(loop_times):
                 end = data_cnt - 1      # 最後のループのときは[データ長-1]の値をendにする
             else:
                 end += ref_dara_range

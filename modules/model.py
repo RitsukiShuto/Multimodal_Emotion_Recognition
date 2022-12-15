@@ -29,7 +29,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
     X_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
     Y_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
-    batch_size = 64
+    batch_size = 256
 
     early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
 
@@ -49,7 +49,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
                                             epochs=epochs,
                                             callbacks=[early_stopping],
                                             verbose=0  # type: ignore
-                                            )
+                                            ) 
 
     fit_Y_single_model = Y_single_model.fit(x=Y_train, y=Z_train,
                                             #validation_split=0.2,
@@ -65,9 +65,9 @@ def model_fit(X_train, Y_train, Z_train, epochs):
 def X_encoder(X_dim):
     X_input = Input(shape=(X_dim, 1))
 
-    hidden = Dense(10, activation='relu')(X_input)
-    hidden = Dense(10, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
+    hidden = Dense(30, activation='relu')(X_input)
+    hidden = Dense(15, activation='relu')(hidden)
+    hidden = Dense(15, activation='relu')(hidden)
 
     conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
@@ -84,9 +84,10 @@ def X_encoder(X_dim):
 def Y_encoder(Y_dim):
     Y_input = Input(shape=(Y_dim, 1))
 
-    hidden = Dense(200, activation='relu')(Y_input)
-    hidden = Dense(200, activation='relu')(hidden)
-    hidden = Dense(200, activation='relu')(hidden)
+    hidden = Dense(300, activation='relu')(Y_input)
+    hidden = Dense(250, activation='relu')(hidden)
+    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(50, activation='relu')(hidden)
 
     conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)

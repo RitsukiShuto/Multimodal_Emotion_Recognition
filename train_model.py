@@ -127,7 +127,7 @@ def model_fit(X1_train, X2_train, y_train, X1_test, X2_test, y_test, meta_data):
 
     # epochsとbatch_size
     epochs = 500        # 学習用パラメータ(デフォルトはe=250, b=64)
-    batch_size = 64
+    batch_size = 256
 
     early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=10)
 
