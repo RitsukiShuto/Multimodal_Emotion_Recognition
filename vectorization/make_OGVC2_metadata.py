@@ -11,7 +11,7 @@ def main():
     ref_text = pd.read_csv('data/OGVC2_metadata.csv')       # テキストデータの参照元
 
     # OGVC Vol.1を読み込む
-    ogvc_1 = pd.read_csv("data/OGVC_vol1_oth.csv")
+    ogvc_1 = pd.read_csv("data/OGVC_Vol1_supervised_5emo.csv")
     ogvc_1 = ogvc_1.drop(columns=['start', 'end', 'ans1', 'ans2', 'ans3'], axis=1)      # 不要なカラムを削除
     ogvc_1['lv'] = 9                                                                    # OGVC Vol.1に感情強度のカラムを追加
     ogvc_1 = ogvc_1.reindex(columns=['fid', 'no', 'person', 'text', 'lv', 'emotion'])   # カラムを入れ替え
@@ -52,7 +52,7 @@ def main():
         concat = pd.concat([ogvc_1, df_ogvc2])
 
         # 演者ごとに保存
-        save_dir = 'data/' + actor + '_mixed_metadata.csv'
+        save_dir = 'data/' + actor + '_natural_5emotion_metadata.csv'
         concat.to_csv(save_dir, header=1, index=0)                      # type: ignore
 
 if __name__ == '__main__':
