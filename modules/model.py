@@ -30,7 +30,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
     Y_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     batch_size = 256
-    
+
 
     early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
 
@@ -74,7 +74,7 @@ def X_encoder(X_dim):
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     X_feature = Flatten()(conv)
-    #X_feature = Dropout(0.5)(X_feature)
+    X_feature = Dropout(0.5)(X_feature)
 
     # 単一モダリティ用の分類層
     classification = Dense(5, activation='softmax')(X_feature)
