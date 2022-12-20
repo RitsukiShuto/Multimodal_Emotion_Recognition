@@ -25,7 +25,8 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     print(f"\n学習データ件数:{X_train.shape[0]}\nテストデータ件数:{Y_test.shape[0]}\n")  # type: ignore
 
     epochs = 250
-    experiment_times = 1    # 実験回数
+    experiment_times = 10
+        # 実験回数
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 

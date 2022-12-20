@@ -26,11 +26,11 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.77, random_state=0, stratify=Z_train)
+    X_train, U_un_labeled, Y_train, V_un_labeled, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
-    U_train = np.append(U_train, un_labeled_U, axis=0)
-    V_train = np.append(V_train, un_labeled_V, axis=0)
+    U_train = np.append(U_un_labeled, un_labeled_U, axis=0)
+    V_train = np.append(V_un_labeled, un_labeled_V, axis=0)
 
     # ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
     #U_train = un_labeled_U
@@ -41,13 +41,13 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
 
     # ループ回数等に関わる変数
     data_cnt = U_train.shape[0]   # データ件数
-    ref_dara_range = 100
-    loop_times = data_cnt / ref_dara_range      # ループ回数
+    ref_data_range = 60
+    loop_times = data_cnt / ref_data_range      # ループ回数
 
     data_count_to_add = -20
 
     # 実験回数
-    experiment_times = 1
+    experiment_times = 10
     batch_size = 256
 
     conf_mats = np.zeros((experiment_times, 5, 5))
@@ -56,7 +56,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
         print(f"実験回数:{i+1}/{experiment_times}")
 
         start = 0       # 未ラベルデータの参照範囲
-        end = ref_dara_range
+        end = ref_data_range - 1
         accuracy_trend = []
 
         epochs = 250
@@ -113,10 +113,16 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             np.random.shuffle(Z_train)
 
             start = end + 1
-            if j == int(loop_times):
-                end = data_cnt - 1      # 最後のループのときは[データ長-1]の値をendにする
+
+            if j+1 == int(loop_times):
+                end = data_cnt      # 最後のループのときは[データ長-1]の値をendにする
+
+                # FIXME: 切り上げで計算するように修正する
+                data_count_to_add = int((end - start) / 3)
+                if data_count_to_add == 0:
+                    data_count_to_add = -1
             else:
-                end += ref_dara_range
+                end += ref_data_range
 
             epochs += 50
 

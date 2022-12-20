@@ -30,6 +30,7 @@ def model_fit(X_train, Y_train, Z_train, epochs):
     Y_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
 
     batch_size = 256
+    
 
     early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
 
@@ -65,9 +66,9 @@ def model_fit(X_train, Y_train, Z_train, epochs):
 def X_encoder(X_dim):
     X_input = Input(shape=(X_dim, 1))
 
-    hidden = Dense(30, activation='relu')(X_input)
-    hidden = Dense(15, activation='relu')(hidden)
-    hidden = Dense(15, activation='relu')(hidden)
+    hidden = Dense(16, activation='relu')(X_input)
+    hidden = Dense(12, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(hidden)
 
     conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
@@ -89,7 +90,7 @@ def Y_encoder(Y_dim):
     hidden = Dense(150, activation='relu')(hidden)
     hidden = Dense(50, activation='relu')(hidden)
 
-    conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    conv = Conv1D(100, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     Y_feature = Flatten()(conv)
@@ -105,10 +106,10 @@ def Y_encoder(Y_dim):
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
 
-    classification = Dense(20, activation='relu')(concat)
-    classification = Dense(15, activation='relu')(classification)
-    classification = Dense(15, activation='relu')(classification)
-    classification = Dense(10, activation='relu')(classification)
+    classification = Dense(110, activation='relu')(concat)
+    classification = Dense(50, activation='relu')(classification)
+    classification = Dense(20, activation='relu')(classification)
+    classification = Dense(20, activation='relu')(classification)
     classification = Dense(10, activation='relu')(classification)
 
     classification = Dropout(0.5)(classification)
