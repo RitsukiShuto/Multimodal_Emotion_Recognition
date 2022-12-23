@@ -70,7 +70,7 @@ def calc_TF_IDF_and_to_PCA(wakati_list):
 
     print("\n(発話数, 単語数)={}".format(val_tfidf.shape))
 
-    pca = PCA(n_components=0.7, whiten=False)
+    pca = PCA(n_components=367, whiten=False)
     pca.fit(val_tfidf.toarray())
 
     print("次元削減後の次元数={}".format(pca.n_components_))
@@ -99,11 +99,11 @@ def main():
 
     LEN = 0                     # LEN文字以上のデータを学習データとして使う
     SOUND_DIM = 64             # 音声の特徴量ベクトルはSOUND_DIM次元である      # 350????
-    PICKUP_EMO_LV = [9]   # 学習に使う感情レベル 9は自発対話音声
+    PICKUP_EMO_LV = [1, 2, 3, 9]   # 学習に使う感情レベル 9は自発対話音声
 
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
-    meta_data = pd.read_csv("../data/MOY_natural_5emotion_metadata.csv", header=0)
+    meta_data = pd.read_csv("../data/MOY1_metadata.csv", header=0)
     #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
     # 音声データをパワースペクトルに変換
@@ -151,7 +151,7 @@ def main():
     # LEN文字以下の発話を除いたメタデータを生成
     new_meta = pd.DataFrame(new_meta)
     new_meta.columns = ['fid', 'no', 'person', 'text', 'lv', 'emotion']  # type: ignore
-    new_meta.to_csv("../train_data/meta_data/1_natural_only_meta.csv", index=True, header=1)  # type: ignore
+    new_meta.to_csv("../train_data/meta_data/4_meta.csv", index=True, header=1)  # type: ignore
 
     pca_tfidf = calc_TF_IDF_and_to_PCA(wakati_list)     # TF-IDFを計算
 
@@ -174,17 +174,17 @@ def main():
     labeled_pow = pd.DataFrame(labeled_pow_list)
     labeled_mfcc = pd.DataFrame(labeled_MFCC_list)
 
-    labeled_tfidf.to_csv(save_dir+"1_TF-IDF_labeled.csv", index=True, header=1)  # type: ignore
-    labeled_pow.to_csv(save_dir+"1_POW_labeled.csv", index=False, header=1)  # type: ignore
-    labeled_mfcc.to_csv(save_dir+"1_MFCC_labeled.csv", index=False, header=1)  # type: ignore
+    labeled_tfidf.to_csv(save_dir+"3_TF-IDF_labeled.csv", index=True, header=1)  # type: ignore
+    labeled_pow.to_csv(save_dir+"3_POW_labeled.csv", index=False, header=1)  # type: ignore
+    labeled_mfcc.to_csv(save_dir+"3_MFCC_labeled.csv", index=False, header=1)  # type: ignore
 
     # ラベルなしデータ
     unlabeled_tfidf = pd.DataFrame(tfidf_unlabeled)
     unlabeled_pow = pd.DataFrame(unlabeled_pow_list)
     unlabeled_mfcc = pd.DataFrame(unlabeled_MFCC_list)
-    unlabeled_tfidf.to_csv(save_dir+"1_TF-IDF_un_labeled.csv", index=True, header=1)  # type: ignore
-    unlabeled_pow.to_csv(save_dir+"1_POW_un_labeled.csv", index=False, header=1)  # type: ignore
-    unlabeled_mfcc.to_csv(save_dir+"1_MFCC_un_labeled.csv", index=False, header=1)  # type: ignore
+    unlabeled_tfidf.to_csv(save_dir+"3_TF-IDF_un_labeled.csv", index=True, header=1)  # type: ignore
+    unlabeled_pow.to_csv(save_dir+"3_POW_un_labeled.csv", index=False, header=1)  # type: ignore
+    unlabeled_mfcc.to_csv(save_dir+"3_MFCC_un_labeled.csv", index=False, header=1)  # type: ignore
 
 if __name__ == '__main__':
     main()

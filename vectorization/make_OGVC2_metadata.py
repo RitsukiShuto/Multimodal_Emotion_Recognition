@@ -52,7 +52,7 @@ def main():
         concat = pd.concat([ogvc_1, df_ogvc2])
 
         # 演者ごとに保存
-        save_dir = 'data/' + actor + '_natural_5emotion_metadata.csv'
+        save_dir = 'data/' + actor + '1_metadata.csv'
         concat.to_csv(save_dir, header=1, index=0)                      # type: ignore
 
 if __name__ == '__main__':
