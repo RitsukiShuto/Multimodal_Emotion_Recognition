@@ -38,9 +38,9 @@ def Y_encoder(Y_dim):
     hidden = Dense(300, activation='relu')(Y_input)
     hidden = Dense(250, activation='relu')(hidden)
     hidden = Dense(150, activation='relu')(hidden)
-    hidden = Dense(50, activation='relu')(hidden)
+    #hidden = Dense(50, activation='relu')(hidden)
 
-    conv = Conv1D(100, 2, padding='same', activation='relu')(hidden)
+    conv = Conv1D(50, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     Y_feature = Flatten()(conv)
@@ -56,11 +56,11 @@ def Y_encoder(Y_dim):
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
 
-    classification = Dense(110, activation='relu')(concat)
-    classification = Dense(50, activation='relu')(classification)
+    classification = Dense(60, activation='relu')(concat)
+    #classification = Dense(50, activation='relu')(classification)
     classification = Dense(20, activation='relu')(classification)
     classification = Dense(20, activation='relu')(classification)
-    classification = Dense(10, activation='relu')(classification)
+    classification = Dense(20, activation='relu')(classification)
 
     classification = Dropout(0.5)(classification)
     output = Dense(5, activation='softmax',
