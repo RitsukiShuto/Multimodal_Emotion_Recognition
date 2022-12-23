@@ -13,7 +13,7 @@ from modules.semi_supervised_learning import semi_supervised_learning
 
 def main():
     # データを読み込む
-    meta_data = pd.read_csv("train_data/meta_data/1_natural_only_meta.csv", header=0)
+    meta_data = pd.read_csv("train_data/meta_data/3_meta.csv", header=0)
     meta_data = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
     # ラベル整形
@@ -23,14 +23,14 @@ def main():
     label_list = pd.DataFrame(encoded, columns=label, dtype=np.int8)
 
     # 教師ありデータを読み込む
-    labeled_X = pd.read_csv("train_data/mixed/1_POW_labeled.csv", header=0, index_col=0)
-    labeled_Y = pd.read_csv("train_data/mixed/1_TF-IDF_labeled.csv", header=0, index_col=0)
+    labeled_X = pd.read_csv("train_data/mixed/3_POW_labeled.csv", header=0, index_col=0)
+    labeled_Y = pd.read_csv("train_data/mixed/3_TF-IDF_labeled.csv", header=0, index_col=0)
 
     # ndarrayに変換
     X = labeled_X.to_numpy()
     Y = labeled_Y.to_numpy()
     Z = label_list.to_numpy()
-
+    
     label_cnt = pd.DataFrame(Z, columns=['ANG', 'JOY', 'NEU', 'SAD', 'SUR'])    
 
     print("\n学習データのクラスごとの件数")
@@ -41,20 +41,42 @@ def main():
     print("SUR", len(label_cnt.query('SUR == 1')))
 
     # データを分割
-    X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(X, Y, Z, shuffle=True, test_size=0.2, random_state=0, stratify=Z)
+    X_train, X_test, Y_train, Y_test, Z_train, Z_test = train_test_split(X, Y, Z, shuffle=True, test_size=488, random_state=0, stratify=Z)
+
+    epochs = 500
+    batch_size = 256
+    experiment_times = 10
 
     # 実行するモードを選択
     print("\n--\n実行する学習を選択")
-    print("[0]supervised_learning\n[1]semi_supervised_learning\n[2]evaluate_model\n")
+    print("[1]supervised_learning\n[2]semi_supervised_learning\n[3]DBG supervised_learning\n[4]DBG semi_supervised_learning\n")
     choice = input("imput the number:")
 
-    if choice == '0':       # 教師あり学習
+    if choice == '1':       # 教師あり学習
         print("run supervised learning")
-        supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test)
+        supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                            epochs, batch_size, experiment_times
+                            )
 
-    elif choice == '1':     # 半教師あり学習
+    elif choice == '2':     # 半教師あり学習
         print("run semi supervised learning")
-        semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test)
+        semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                                 epochs, batch_size, experiment_times
+                                 )
+
+    elif choice == '3':
+        epochs = 1
+        print("[DBG] supervised learning")
+        supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                            epochs, batch_size, experiment_times
+                            )
+
+    elif choice == '4':
+        epochs = 1
+        print("[DBG] semi supervised learning")
+        semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                                 epochs, batch_size, experiment_times
+                                )
 
     else:       # Error
         print("error")

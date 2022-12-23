@@ -8,32 +8,36 @@ import os
 
 from sklearn.model_selection import train_test_split
 
-from modules.model import model_fit
+from modules.model import model_compile, model_fit
 from modules.utils import calc_score, calc_conf_mat, save_fig
 
-def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
+
+def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                        epochs, batch_size, experiment_times):
     # ログを保存
     # 現在時刻を文字列として格納
     now = datetime.datetime.now()       # 現在時刻を取得
+    
     time = now.strftime('%Y%m%d_%H%M')
     save_dir = "train_log/supervised/" + time
     os.mkdir(save_dir)
 
     # データを分割
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
+    #X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
 
     print(f"\n学習データ件数:{X_train.shape[0]}\nテストデータ件数:{Y_test.shape[0]}\n")  # type: ignore
-
-    epochs = 250
-    experiment_times = 10       # 実験回数
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 
     for i in range(experiment_times):
         print(f"実験回数:{i+1}/{experiment_times}")
 
+        # モデル生成
+        multimodal_model, X_single_model, Y_single_model = model_compile(X_train, Y_train)
+
         # 学習
-        multimodal_model, X_single_model, Y_single_model, history_MM, history_X, history_Y = model_fit(X_train, Y_train, Z_train, epochs)
+        history_MM, history_X, history_Y = model_fit(multimodal_model, X_single_model, Y_single_model,
+                                                     X_train, Y_train, Z_train, epochs, batch_size)
 
         # 精度を計算
         MM_conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
@@ -47,4 +51,4 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
         conf_mats[i, :, :] = MM_conf_mat
 
     df1, df2 = calc_conf_mat(conf_mats, experiment_times)
-    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 99, 0)
+    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 'score', 0)

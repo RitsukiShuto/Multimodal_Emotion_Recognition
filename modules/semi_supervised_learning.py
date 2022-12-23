@@ -9,10 +9,11 @@ import os
 
 from sklearn.model_selection import train_test_split
 
-from modules.model import model_fit
+from modules.model import model_compile, model_fit
 from modules.utils import calc_score, calc_conf_mat, save_fig
 
-def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
+def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+                             epochs, batch_size, experiment_times):
     # ログを保存
     # 現在時刻を文字列として格納
     now = datetime.datetime.now()       # 現在時刻を取得
@@ -21,8 +22,8 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/1_POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/1_TF-IDF_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/3_POW_un_labeled.csv", header=0, index_col=0)
+    un_labeled_V = pd.read_csv("train_data/mixed/3_TF-IDF_un_labeled.csv", header=0, index_col=0)
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
@@ -40,30 +41,30 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
     print(f"\n教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}\n")  # type: ignore
 
     # ループ回数等に関わる変数
-    data_cnt = U_train.shape[0]   # データ件数
-    ref_data_range = 60
+    data_cnt = U_train.shape[0]                 # データ件数
+    ref_data_range = 60                         # 推定する未ラベルデータの個数
     loop_times = data_cnt / ref_data_range      # ループ回数
-
-    data_count_to_add = -20
-
-    # 実験回数
-    experiment_times = 10
-    batch_size = 256
 
     conf_mats = np.zeros((experiment_times, 5, 5))
 
     for i in range(experiment_times):
+        start = 0                       # 未ラベルデータの参照範囲[start]
+        end = ref_data_range - 1        # 未ラベルデータの参照範囲[end] --> [参照するデータ数] - 1が最後のインデックス
+        data_count_to_add = -20         # 仮ラベル付けするデータの件数
+        accuracy_trend = []             # 精度の推移を格納するための変数
+    
         print(f"実験回数:{i+1}/{experiment_times}")
+        print("初回学習")
 
-        start = 0       # 未ラベルデータの参照範囲
-        end = ref_data_range - 1
-        accuracy_trend = []
+        # モデル生成
+        multimodal_model, X_single_model, Y_single_model = model_compile(X_train, Y_train)
 
-        epochs = 250
+        # 学習
+        fit_multimodal_model, fit_X_single_model, fit_Y_single_model = model_fit(multimodal_model, X_single_model, Y_single_model,
+                                                                                 X_train, Y_train, Z_train, epochs, batch_size)
 
-        # 初回学習
-        multimodal_model, X_single_model, Y_single_model, model_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
-        calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+        # 未知データでテスト
+        calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
 
         # ラベルなしデータを推定して仮ラベルを付与する
         for j in range(int(loop_times)+1):
@@ -102,8 +103,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             Y_train = np.append(Y_train, V_train[topN_index + start], axis=0)
             Z_train = np.append(Z_train, temp_label,axis=0)
 
-            # データをシャッフル
-            np.random.seed(0)              # ランダムシードを固定
+            np.random.seed(0)               # ランダムシードを固定
             np.random.shuffle(X_train)      # シャッフル
 
             np.random.seed(0)
@@ -112,34 +112,42 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test):
             np.random.seed(0)
             np.random.shuffle(Z_train)
 
+            # 未ラベルデータの参照範囲を更新
             start = end + 1
 
             if j+1 == int(loop_times):
                 end = data_cnt      # 最後のループのときは[データ長-1]の値をendにする
 
                 # FIXME: 切り上げで計算するように修正する
-                data_count_to_add = int((end - start) / 3)
+                data_count_to_add = int(-(end - start) / 3)
                 if data_count_to_add == 0:
                     data_count_to_add = -1
             else:
                 end += ref_data_range
 
-            epochs += 50
+            #epochs += 50
 
-            multimodal_model, X_single_model, Y_single_model, history_MM, model_X, model_Y = model_fit(X_train, Y_train, Z_train, epochs)
-            conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)        # 精度を表示
+            # モデル生成
+            #multimodal_model, X_single_model, Y_single_model = model_compile(X_train, Y_train)
+
+            # 学習
+            fit_multimodal_model, fit_X_single_model, fit_Y_single_model = model_fit(multimodal_model, X_single_model, Y_single_model,
+                                                                                    X_train, Y_train, Z_train, epochs, batch_size)
+
+            # 未知データでテスト
+            conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
 
             accuracy_trend.append(accuracy)
 
             # lossとaccuracyのグラフを保存
             df1, df2 = calc_conf_mat(conf_mat, None)
-            save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, i+1, j+1)
+            save_fig(save_dir, multimodal_model, fit_multimodal_model, None, df1, df2, i+1, j+1)
 
         MM_conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
-        save_fig(save_dir, multimodal_model, history_MM, accuracy_trend, df1, df2, i+1, 0)
+        save_fig(save_dir, multimodal_model, fit_multimodal_model, accuracy_trend, df1, df2, i+1, 0)
 
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
     df1, df2 = calc_conf_mat(conf_mats, experiment_times)
-    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 99, 0)
+    save_fig(save_dir, multimodal_model, fit_multimodal_model, None, df1, df2, 'score', 0)

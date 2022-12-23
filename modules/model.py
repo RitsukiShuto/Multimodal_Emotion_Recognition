@@ -11,57 +11,6 @@ from keras.layers import (Add, Concatenate, Conv1D, Dense, Dropout, Flatten, Max
 from keras.losses import categorical_crossentropy
 from keras.utils.vis_utils import plot_model
 
-# 学習
-def model_fit(X_train, Y_train, Z_train, epochs):
-    # モダリティの次元数を取得
-    X_dim = X_train.shape[1]
-    Y_dim = Y_train.shape[1]
-
-    # 特徴量抽出層
-    X_input, X_feature, X_single_model = X_encoder(X_dim)
-    Y_input, Y_feature, Y_single_model = Y_encoder(Y_dim)
-
-    # マルチモーダル分類層
-    multimodal_model = Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature)
-
-    # モデルを生成
-    multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
-    X_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
-    Y_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
-
-    batch_size = 256
-
-
-    early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
-
-    # 学習
-    fit_multimodal_model = multimodal_model.fit(x=[X_train, Y_train],
-                                                y=Z_train,
-                                                #validation_split=0.2,
-                                                batch_size=batch_size,
-                                                epochs=epochs,
-                                                callbacks=[early_stopping],
-                                                verbose=0  # type: ignore
-                                                )
-
-    fit_X_single_model = X_single_model.fit(x=X_train, y=Z_train,
-                                            #validation_split=0.2,
-                                            batch_size=batch_size,
-                                            epochs=epochs,
-                                            callbacks=[early_stopping],
-                                            verbose=0  # type: ignore
-                                            ) 
-
-    fit_Y_single_model = Y_single_model.fit(x=Y_train, y=Z_train,
-                                            #validation_split=0.2,
-                                            batch_size=batch_size,
-                                            epochs=epochs,
-                                            callbacks=[early_stopping],
-                                            verbose=0  # type: ignore
-                                            )
-
-    return multimodal_model, X_single_model, Y_single_model, fit_multimodal_model, fit_X_single_model, fit_Y_single_model
-
 # モダリティの特徴量抽出層
 def X_encoder(X_dim):
     X_input = Input(shape=(X_dim, 1))
@@ -81,6 +30,7 @@ def X_encoder(X_dim):
     X_single_model = Model(X_input, classification)
 
     return X_input, X_feature, X_single_model
+
 
 def Y_encoder(Y_dim):
     Y_input = Input(shape=(Y_dim, 1))
@@ -113,8 +63,62 @@ def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     classification = Dense(10, activation='relu')(classification)
 
     classification = Dropout(0.5)(classification)
-    output = Dense(5, activation='softmax', name='output_layer')(classification)
+    output = Dense(5, activation='softmax',
+                   name='output_layer')(classification)
 
     multimodal_model = Model([X_input, Y_input], output)
 
     return multimodal_model
+
+# モデル生成
+def model_compile(X_train, Y_train):
+    # モダリティの次元数を取得
+    X_dim = X_train.shape[1]
+    Y_dim = Y_train.shape[1]
+
+    # 特徴量抽出層
+    X_input, X_feature, X_single_model = X_encoder(X_dim)
+    Y_input, Y_feature, Y_single_model = Y_encoder(Y_dim)
+
+    # マルチモーダル分類層
+    multimodal_model = Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature)
+
+    # モデルを生成
+    multimodal_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
+    X_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
+    Y_single_model.compile(optimizer=Adam(lr=1e-4, decay=1e-6, amsgrad=True), loss=categorical_crossentropy, metrics=['accuracy'])
+
+    return multimodal_model, X_single_model, Y_single_model
+
+# 学習
+def model_fit(multimodal_model, X_single_model, Y_single_model, X_train, Y_train, Z_train, epochs, batch_size):
+    # Early_Stopping
+    early_stopping = EarlyStopping(monitor='loss', mode='min', patience=10)
+
+    # 学習
+    fit_multimodal_model = multimodal_model.fit(x=[X_train, Y_train],
+                                                y=Z_train,
+                                                #validation_split=0.2,
+                                                batch_size=batch_size,
+                                                epochs=epochs,
+                                                callbacks=[early_stopping],
+                                                verbose=0  # type: ignore
+                                                )
+
+    fit_X_single_model = X_single_model.fit(x=X_train, y=Z_train,
+                                            #validation_split=0.2,
+                                            batch_size=batch_size,
+                                            epochs=epochs,
+                                            callbacks=[early_stopping],
+                                            verbose=0  # type: ignore
+                                            ) 
+
+    fit_Y_single_model = Y_single_model.fit(x=Y_train, y=Z_train,
+                                            #validation_split=0.2,
+                                            batch_size=batch_size,
+                                            epochs=epochs,
+                                            callbacks=[early_stopping],
+                                            verbose=0  # type: ignore
+                                            )
+
+    return fit_multimodal_model, fit_X_single_model, fit_Y_single_model
