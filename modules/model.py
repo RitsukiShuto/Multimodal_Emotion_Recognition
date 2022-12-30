@@ -26,11 +26,10 @@ def X_encoder(X_dim):
     X_feature = Dropout(0.5)(X_feature)
 
     # 単一モダリティ用の分類層
-    classification = Dense(5, activation='softmax')(X_feature)
-    X_single_model = Model(X_input, classification)
+    X_classification = Dense(5, activation='softmax')(X_feature)
+    X_single_model = Model(X_input, X_classification)
 
     return X_input, X_feature, X_single_model
-
 
 def Y_encoder(Y_dim):
     Y_input = Input(shape=(Y_dim, 1))
@@ -47,8 +46,8 @@ def Y_encoder(Y_dim):
     #Y_feature = Dropout(0.5)(Y_feature)
 
     # 単一モダリティ用の分類層
-    classification = Dense(5, activation='softmax')(Y_feature)
-    Y_single_model = Model(Y_input, classification)
+    Y_classification = Dense(5, activation='softmax')(Y_feature)
+    Y_single_model = Model(Y_input, Y_classification)
 
     return Y_input, Y_feature, Y_single_model
 
