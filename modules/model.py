@@ -7,7 +7,7 @@ from keras import Input, Model
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
-from keras.layers import (Add, Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D)
+from keras.layers import (Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D, Reshape)
 from keras.losses import categorical_crossentropy
 from keras.utils.vis_utils import plot_model
 
@@ -19,13 +19,13 @@ def X_encoder(X_dim):
     hidden = Dense(12, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
 
-    conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
+    #conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    #conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
-    X_feature = Flatten()(conv)
-    X_feature = Dropout(0.5)(X_feature)
+    X_feature = Dropout(0.5)(hidden)
 
     # 単一モダリティ用の分類層
+    X_feature = Flatten()(X_feature)
     X_classification = Dense(5, activation='softmax')(X_feature)
     X_single_model = Model(X_input, X_classification)
 
@@ -37,15 +37,15 @@ def Y_encoder(Y_dim):
     hidden = Dense(300, activation='relu')(Y_input)
     hidden = Dense(250, activation='relu')(hidden)
     hidden = Dense(150, activation='relu')(hidden)
-    #hidden = Dense(50, activation='relu')(hidden)
+    Y_feature = Dense(50, activation='relu')(hidden)
 
-    conv = Conv1D(50, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
+    #conv = Conv1D(50, 2, padding='same', activation='relu')(hidden)
+    #conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
-    Y_feature = Flatten()(conv)
     #Y_feature = Dropout(0.5)(Y_feature)
 
     # 単一モダリティ用の分類層
+    Y_feature = Flatten()(Y_feature)
     Y_classification = Dense(5, activation='softmax')(Y_feature)
     Y_single_model = Model(Y_input, Y_classification)
 
@@ -54,16 +54,22 @@ def Y_encoder(Y_dim):
 # マルチモーダル分類層
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
+    concat = Dense(60)(concat)
+    concat = Reshape((60, 1), input_shape=(60,))(concat)
 
-    classification = Dense(60, activation='relu')(concat)
+    conv = Conv1D(20, 2, padding='same', activation='relu')(concat)
+    conv = MaxPool1D(pool_size=2, padding='same')(conv)
+
+    #classification = Dense(60, activation='relu')(concat)
     #classification = Dense(50, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(classification)
+    classification = Dense(10, activation='relu')(conv)
+    classification = Dense(10, activation='relu')(classification)
+    classification = Dense(10, activation='relu')(classification)
 
-    classification = Dropout(0.5)(classification)
-    output = Dense(5, activation='softmax',
-                   name='output_layer')(classification)
+    flatten = Flatten()(classification)
+
+    classification = Dropout(0.5)(flatten)
+    output = Dense(5, activation='softmax', name='output_layer')(classification)
 
     multimodal_model = Model([X_input, Y_input], output)
 
