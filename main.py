@@ -64,7 +64,6 @@ def main():
                                  epochs, batch_size, experiment_times
                                  )
 
-
     elif choice == '3':
         epochs = 1
         print("[DBG] supervised learning")
