@@ -22,21 +22,21 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
     os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/4_POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/4_TF-IDF_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/11_POW_un_labeled.csv", header=0, index_col=0)
+    un_labeled_V = pd.read_csv("train_data/mixed/11_TF-IDF_un_labeled.csv", header=0, index_col=0)
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
-    #X_train, U_un_labeled, Y_train, V_un_labeled, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
+    X_train, U_un_labeled, Y_train, V_un_labeled, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
 
     # ラベルなしデータと結合
-    #U_train = np.append(U_un_labeled, un_labeled_U, axis=0)
-    #V_train = np.append(V_un_labeled, un_labeled_V, axis=0)
+    U_train = np.append(U_un_labeled, un_labeled_U, axis=0)
+    V_train = np.append(V_un_labeled, un_labeled_V, axis=0)
 
     # ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
-    U_train = un_labeled_U
-    V_train = un_labeled_V
-    W_train = []
+    #U_train = un_labeled_U
+    #V_train = un_labeled_V
+    #W_train = []
 
     print(f"\n教師ありデータ:{X_train.shape[0]}\n教師なしデータ:{U_train.shape[0]}\nテストデータ:{X_test.shape[0]}\n")  # type: ignore
 
