@@ -52,11 +52,11 @@ def Y_encoder(Y_dim):
 # マルチモーダル分類層
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
-    #concat = Dense(60)(concat)
-    #concat = Reshape((60, 1), input_shape=(60,))(concat)
+    concat = Dense(60)(concat)
+    concat = Reshape((60, 1), input_shape=(60,))(concat)
 
-    #concat = MaxPool1D(pool_size=3, padding='same')(concat)
-    #concat = Flatten()(concat)
+    concat = MaxPool1D(pool_size=3, padding='same')(concat)
+    concat = Flatten()(concat)
 
     #classification = Dense(50, activation='relu')(classification)
     classification = Dense(20, activation='relu')(concat)
