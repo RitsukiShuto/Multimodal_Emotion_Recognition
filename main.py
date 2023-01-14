@@ -13,7 +13,7 @@ from modules.semi_supervised_learning import semi_supervised_learning
 
 def main():
     # データを読み込む
-    meta_data = pd.read_csv("train_data/meta_data/1_meta.csv", header=0)
+    meta_data = pd.read_csv("train_data/meta_data/3_meta.csv", header=0)
     meta_data = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
     # ラベル整形
@@ -23,8 +23,8 @@ def main():
     label_list = pd.DataFrame(encoded, columns=label, dtype=np.int8)
 
     # 教師ありデータを読み込む
-    labeled_X = pd.read_csv("train_data/mixed/1_POW_labeled.csv", header=0, index_col=0)
-    labeled_Y = pd.read_csv("train_data/mixed/1_TF-IDF_labeled.csv", header=0, index_col=0)
+    labeled_X = pd.read_csv("train_data/mixed/3_POW_labeled.csv", header=0, index_col=0)
+    labeled_Y = pd.read_csv("train_data/mixed/3_TF-IDF_labeled.csv", header=0, index_col=0)
 
     # ndarrayに変換
     X = labeled_X.to_numpy()

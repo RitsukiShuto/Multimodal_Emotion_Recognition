@@ -22,8 +22,8 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
     os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/11_POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/11_TF-IDF_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/3_POW_un_labeled.csv", header=0, index_col=0)
+    un_labeled_V = pd.read_csv("train_data/mixed/3_TF-IDF_un_labeled.csv", header=0, index_col=0)
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
@@ -33,7 +33,7 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
     U_train = np.append(U_un_labeled, un_labeled_U, axis=0)
     V_train = np.append(V_un_labeled, un_labeled_V, axis=0)
 
-    # ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
+    # TODO: ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
     #U_train = un_labeled_U
     #V_train = un_labeled_V
     #W_train = []
