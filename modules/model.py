@@ -2,12 +2,10 @@
 # main.py
 # ニューラルネットワークの定義, 学習を行う
 #
-import tensorflow as tf
 from keras import Input, Model
-from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
-from keras.layers import (Add, Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D)
+from keras.layers import (Concatenate, Conv1D, Dense, Dropout, Flatten, MaxPool1D, Reshape)
 from keras.losses import categorical_crossentropy
 from keras.utils.vis_utils import plot_model
 
@@ -15,8 +13,8 @@ from keras.utils.vis_utils import plot_model
 def X_encoder(X_dim):
     X_input = Input(shape=(X_dim, 1))
 
-    hidden = Dense(16, activation='relu')(X_input)
-    hidden = Dense(12, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu')(X_input)
+    hidden = Dense(10, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
 
     conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
@@ -54,16 +52,19 @@ def Y_encoder(Y_dim):
 # マルチモーダル分類層
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
+    #concat = Dense(60)(concat)
+    #concat = Reshape((60, 1), input_shape=(60,))(concat)
 
-    classification = Dense(60, activation='relu')(concat)
+    #concat = MaxPool1D(pool_size=3, padding='same')(concat)
+    #concat = Flatten()(concat)
+
     #classification = Dense(50, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(classification)
+    classification = Dense(20, activation='relu')(concat)
     classification = Dense(20, activation='relu')(classification)
     classification = Dense(20, activation='relu')(classification)
 
     classification = Dropout(0.5)(classification)
-    output = Dense(5, activation='softmax',
-                   name='output_layer')(classification)
+    output = Dense(5, activation='softmax', name='output_layer')(classification)
 
     multimodal_model = Model([X_input, Y_input], output)
 
