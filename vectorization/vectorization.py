@@ -98,8 +98,8 @@ def main():
     cnt_labeled_data = 0
 
     LEN = 0                     # LEN文字以上のデータを学習データとして使う
-    SOUND_DIM = 300             # 音声の特徴量ベクトルはSOUND_DIM次元である      # 350????
-    PICKUP_EMO_LV = [9]   # 学習に使う感情レベル 9は自発対話音声
+    SOUND_DIM = 64              # 音声の特徴量ベクトルはSOUND_DIM次元である
+    PICKUP_EMO_LV = [9]         # 学習に使う感情レベル 9は自発対話音声
 
     # メタデータの読み込み
     # INFO: 読み込ませるデータセットはここで変更する。
