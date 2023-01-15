@@ -13,11 +13,11 @@ from keras.utils.vis_utils import plot_model
 def X_encoder(X_dim):
     X_input = Input(shape=(X_dim, 1))
 
-    hidden = Dense(10, activation='relu')(X_input)
-    hidden = Dense(10, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
+    hidden = Dense(7, activation='relu')(X_input)
+    hidden = Dense(7, activation='relu')(hidden)
+    hidden = Dense(7, activation='relu')(hidden)
 
-    conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
+    conv = Conv1D(5, 2, padding='same', activation='relu')(hidden)
     conv = MaxPool1D(pool_size=2, padding='same')(conv)
 
     X_feature = Flatten()(conv)
