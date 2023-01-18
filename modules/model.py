@@ -11,17 +11,13 @@ from keras.utils.vis_utils import plot_model
 
 # モダリティの特徴量抽出層
 def X_encoder(X_dim):
-    X_input = Input(shape=(X_dim, 1))
+    X_input = Input(batch_shape=(None, X_dim))
 
     hidden = Dense(10, activation='relu')(X_input)
     hidden = Dense(10, activation='relu')(hidden)
     hidden = Dense(10, activation='relu')(hidden)
 
-    conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
-
-    X_feature = Flatten()(conv)
-    X_feature = Dropout(0.5)(X_feature)
+    X_feature = Dropout(0.5)(hidden)
 
     # 単一モダリティ用の分類層
     X_classification = Dense(5, activation='softmax')(X_feature)
@@ -30,18 +26,12 @@ def X_encoder(X_dim):
     return X_input, X_feature, X_single_model
 
 def Y_encoder(Y_dim):
-    Y_input = Input(shape=(Y_dim, 1))
+    Y_input = Input(batch_shape=(None, Y_dim))
 
     hidden = Dense(300, activation='relu')(Y_input)
     hidden = Dense(250, activation='relu')(hidden)
     hidden = Dense(150, activation='relu')(hidden)
-    #hidden = Dense(50, activation='relu')(hidden)
-
-    conv = Conv1D(50, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
-
-    Y_feature = Flatten()(conv)
-    #Y_feature = Dropout(0.5)(Y_feature)
+    Y_feature = Dense(50, activation='relu')(hidden)
 
     # 単一モダリティ用の分類層
     Y_classification = Dense(5, activation='softmax')(Y_feature)
@@ -52,7 +42,7 @@ def Y_encoder(Y_dim):
 # マルチモーダル分類層
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
     concat = Concatenate()([X_feature, Y_feature])
-    #concat = Dense(60)(concat)
+    concat = Dense(60)(concat)
     #concat = Reshape((60, 1), input_shape=(60,))(concat)
 
     #concat = MaxPool1D(pool_size=3, padding='same')(concat)
