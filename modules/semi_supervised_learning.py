@@ -22,8 +22,8 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
     os.mkdir(save_dir)
 
     # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/3_POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/3_TF-IDF_un_labeled.csv", header=0, index_col=0)
+    un_labeled_U = pd.read_csv("train_data/mixed/1_POW_un_labeled.csv", header=0, index_col=0)
+    un_labeled_V = pd.read_csv("train_data/mixed/1_TF-IDF_un_labeled.csv", header=0, index_col=0)
     un_labeled_U = un_labeled_U.to_numpy()
     un_labeled_V = un_labeled_V.to_numpy()
 
