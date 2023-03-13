@@ -445,8 +445,8 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
     print("SUR", len(label_cnt.query('SUR == 1')))
 
     # ラベルなしデータを読み込む
-    sound_un_labeled_X1 = pd.read_csv("train_data/mixed/MFCC_un_labeled.csv", header=0, index_col=0)
-    tfidf_un_labeled_X2 = pd.read_csv("train_data/mixed/TF-IDF_un_labeled.csv", header=0, index_col=0)
+    sound_un_labeled_X1 = pd.read_csv("train_data/feature_vector/MFCC_un_labeled.csv", header=0, index_col=0)
+    tfidf_un_labeled_X2 = pd.read_csv("train_data/feature_vector/TF-IDF_un_labeled.csv", header=0, index_col=0)
 
     # データを変換
     un_X1 = sound_un_labeled_X1.to_numpy()        # 学習データをnumpy配列に変換
@@ -547,7 +547,7 @@ def semi_supervised_learning(X1_train, X1_sv, X1_un, X1_test, X2_train, X2_sv, X
 def main():
     # メタデータのディレクトリ
     # CAUTION: 使用するメタデータを変更する
-    meta_data = pd.read_csv("train_data/meta_data/MOY_mixed_meta.csv", header=0)  # INFO: OGVC_vol.1
+    meta_data = pd.read_csv("train_data/meta_data/MOY_feature_vector_meta.csv", header=0)  # INFO: OGVC_vol.1
     #meta_data = pd.read_csv("data/OGVC_Vol2_supervised.csv", header=0)  # INFO: OGVC_vol.2
     supervised_meta = meta_data.dropna(subset=['emotion'], axis=0)      # 全体のメタデータから教師ありデータのみを抽出
 
@@ -561,8 +561,8 @@ def main():
     
     # 教師ありデータの読み込み
     # INFO: OGVC_vol.1
-    sound_labeled_X1 = pd.read_csv("train_data/mixed/MFCC_labeled.csv", header=0, index_col=0)
-    tfidf_labeled_X2 = pd.read_csv("train_data/mixed/TF-IDF_labeled.csv", header=0, index_col=0)
+    sound_labeled_X1 = pd.read_csv("train_data/feature_vector/MFCC_labeled.csv", header=0, index_col=0)
+    tfidf_labeled_X2 = pd.read_csv("train_data/feature_vector/TF-IDF_labeled.csv", header=0, index_col=0)
 
     # INFO OGVC_vol.2
     #sound_labeled_X1 = pd.read_csv("train_data/OGVC_vol2/POW_all.csv", header=0, index_col=0)

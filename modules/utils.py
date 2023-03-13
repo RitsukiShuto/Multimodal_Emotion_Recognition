@@ -1,5 +1,5 @@
 # Created by RitsukiShuto on 2022/11/23.
-# eval_model.py
+# utils.py
 # テストデータでモデルのテストを行う
 #
 import numpy as np

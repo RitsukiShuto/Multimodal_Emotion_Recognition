@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/11/23.
 # supervised_learning.py
 # 半教師あり学習を行う
+# このプログラムはmain.pyから呼び出される。これ単体で実行しても動かない。
 #
 import pandas as pd
 import numpy as np
@@ -12,26 +13,15 @@ from sklearn.model_selection import train_test_split
 from modules.model import model_compile, model_fit
 from modules.utils import calc_score, calc_conf_mat, save_fig
 
-def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
+def semi_supervised_learning(X_train, Y_train, U_train, V_train, W_train,
+                             Z_train, X_test, Y_test, Z_test,
                              epochs, batch_size, experiment_times):
-    # ログを保存
+    # ログ保存用
     # 現在時刻を文字列として格納
     now = datetime.datetime.now()       # 現在時刻を取得
     time = now.strftime('%Y%m%d_%H%M')
     save_dir = "train_log/semi_supervised/" + time
     os.mkdir(save_dir)
-
-    # ラベルなしデータを読み込む
-    un_labeled_U = pd.read_csv("train_data/mixed/3_POW_un_labeled.csv", header=0, index_col=0)
-    un_labeled_V = pd.read_csv("train_data/mixed/3_TF-IDF_un_labeled.csv", header=0, index_col=0)
-    un_labeled_U = un_labeled_U.to_numpy()
-    un_labeled_V = un_labeled_V.to_numpy()
-
-    X_train, U_un_labeled, Y_train, V_un_labeled, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
-
-    # ラベルなしデータと結合
-    U_train = np.append(U_un_labeled, un_labeled_U, axis=0)
-    V_train = np.append(V_un_labeled, un_labeled_V, axis=0)
 
     # TODO: ラベルなしデータのみを扱う際は以下の3行をコメントアウトせよ
     #U_train = un_labeled_U
@@ -58,6 +48,10 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
 
         # モデル生成
         multimodal_model, X_single_model, Y_single_model = model_compile(X_train, Y_train)
+
+        # 1回目のときだけmodel summaryを表示
+        if i == 0:
+            print(multimodal_model.summary())
 
         # 学習
         fit_multimodal_model, fit_X_single_model, fit_Y_single_model = model_fit(multimodal_model, X_single_model, Y_single_model,
@@ -125,16 +119,11 @@ def semi_supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
             else:
                 end += ref_data_range
 
-            #epochs += 50
-
-            # モデル生成
-            #multimodal_model, X_single_model, Y_single_model = model_compile(X_train, Y_train)
-
             # 学習
             fit_multimodal_model, fit_X_single_model, fit_Y_single_model = model_fit(multimodal_model, X_single_model, Y_single_model,
                                                                                     X_train, Y_train, Z_train, epochs, batch_size)
 
-            # 未知データでテスト
+            # テスト
             conf_mat, accuracy = calc_score(multimodal_model, X_single_model, Y_single_model, X_test, Y_test, Z_test)
 
             accuracy_trend.append(accuracy)

@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/11/23.
 # supervised_learning.py
 # 教師あり学習を行う
+# このプログラムはmain.pyから呼び出される。これ単体で実行しても動かない。
 #
 import numpy as np
 import datetime
@@ -21,9 +22,6 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
     time = now.strftime('%Y%m%d_%H%M')
     save_dir = "train_log/supervised/" + time
     os.mkdir(save_dir)
-
-    # データを分割
-    X_train, U_train, Y_train, V_train, Z_train, W_train = train_test_split(X_train, Y_train, Z_train, shuffle=True, test_size=0.7, random_state=0, stratify=Z_train)
 
     print(f"\n学習データ件数:{X_train.shape[0]}\nテストデータ件数:{Y_test.shape[0]}\n")  # type: ignore
 
@@ -50,5 +48,5 @@ def supervised_learning(X_train, Y_train, Z_train, X_test, Y_test, Z_test,
         MM_conf_mat = np.reshape(MM_conf_mat, (1, 5, 5))
         conf_mats[i, :, :] = MM_conf_mat
 
-    df1, df2 = calc_conf_mat(conf_mats, experiment_times)
-    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 'score', 0)
+    df1, df2 = calc_conf_mat(conf_mats, experiment_times)       # 混同行列の平均を求める
+    save_fig(save_dir, multimodal_model, history_MM, None, df1, df2, 'score', 0)    # ログを保存

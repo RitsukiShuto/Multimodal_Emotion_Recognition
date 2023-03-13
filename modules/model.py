@@ -1,6 +1,7 @@
 # Created by RitsukiShuto on 2022/11/23.
-# main.py
+# models.py
 # ニューラルネットワークの定義, 学習を行う
+# このプログラムはsupervise_learning.pyまたはsemi_supervised_learningから呼び出される。これ単体では実行できない。
 #
 from keras import Input, Model
 from tensorflow.keras.optimizers import Adam
@@ -11,17 +12,17 @@ from keras.utils.vis_utils import plot_model
 
 # モダリティの特徴量抽出層
 def X_encoder(X_dim):
-    X_input = Input(shape=(X_dim, 1))
+    X_input = Input(shape=(X_dim, 1), name='X_input_layer')
 
-    hidden = Dense(10, activation='relu')(X_input)
-    hidden = Dense(10, activation='relu')(hidden)
-    hidden = Dense(10, activation='relu')(hidden)
+    hidden = Dense(10, activation='relu', name='X_layer_1')(X_input)
+    hidden = Dense(10, activation='relu', name='X_layer_2')(hidden)
+    hidden = Dense(10, activation='relu', name='X_layer_3')(hidden)
 
-    conv = Conv1D(10, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
+    conv = Conv1D(10, 2, padding='same', activation='relu',name='X_layer_4')(hidden)
+    conv = MaxPool1D(pool_size=2, padding='same', name='X_layer_5')(conv)
 
-    X_feature = Flatten()(conv)
-    X_feature = Dropout(0.5)(X_feature)
+    X_feature = Flatten(name='X_layer_6')(conv)
+    X_feature = Dropout(0.5, name='X_layer_7')(X_feature)
 
     # 単一モダリティ用の分類層
     X_classification = Dense(5, activation='softmax')(X_feature)
@@ -30,17 +31,17 @@ def X_encoder(X_dim):
     return X_input, X_feature, X_single_model
 
 def Y_encoder(Y_dim):
-    Y_input = Input(shape=(Y_dim, 1))
+    Y_input = Input(shape=(Y_dim, 1), name='Y_input_layer')
 
-    hidden = Dense(300, activation='relu')(Y_input)
-    hidden = Dense(250, activation='relu')(hidden)
-    hidden = Dense(150, activation='relu')(hidden)
+    hidden = Dense(300, activation='relu', name='Y_layer_1')(Y_input)
+    hidden = Dense(250, activation='relu', name='Y_layer_2')(hidden)
+    hidden = Dense(150, activation='relu', name='Y_layer_3')(hidden)
     #hidden = Dense(50, activation='relu')(hidden)
 
-    conv = Conv1D(50, 2, padding='same', activation='relu')(hidden)
-    conv = MaxPool1D(pool_size=2, padding='same')(conv)
+    conv = Conv1D(50, 2, padding='same', activation='relu',name='Y_layer_4')(hidden)
+    conv = MaxPool1D(pool_size=2, padding='same', name='Y_layer_5')(conv)
 
-    Y_feature = Flatten()(conv)
+    Y_feature = Flatten(name='Y_layer_6')(conv)
     #Y_feature = Dropout(0.5)(Y_feature)
 
     # 単一モダリティ用の分類層
@@ -51,19 +52,19 @@ def Y_encoder(Y_dim):
 
 # マルチモーダル分類層
 def Multimodal_Classification_Layer(X_input, Y_input, X_feature, Y_feature):
-    concat = Concatenate()([X_feature, Y_feature])
-    #concat = Dense(60)(concat)
-    #concat = Reshape((60, 1), input_shape=(60,))(concat)
+    concat = Concatenate(name='concatenate')([X_feature, Y_feature])
+    #concat = Dense(100)(concat)
+    #concat = Reshape((100, 1), input_shape=(60,))(concat)
 
-    #concat = MaxPool1D(pool_size=3, padding='same')(concat)
+    #concat = MaxPool1D(pool_size=2, padding='same')(concat)
     #concat = Flatten()(concat)
 
     #classification = Dense(50, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(concat)
-    classification = Dense(20, activation='relu')(classification)
-    classification = Dense(20, activation='relu')(classification)
-
-    classification = Dropout(0.5)(classification)
+    classification = Dense(20, activation='relu', name='classification_layer_1')(concat)
+    classification = Dense(20, activation='relu', name='classification_layer_2')(classification)
+    classification = Dense(20, activation='relu', name='classification_layer_3')(classification)
+          
+    classification = Dropout(0.5, name='classification_layer_4')(classification)
     output = Dense(5, activation='softmax', name='output_layer')(classification)
 
     multimodal_model = Model([X_input, Y_input], output)

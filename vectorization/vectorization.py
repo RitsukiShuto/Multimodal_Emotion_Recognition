@@ -1,7 +1,7 @@
 # Created by RitsukiShuto on 2022/10/09.
 # vectorization.py
 # 音声、言語の生データをベクトル化する。
-# 
+#
 import pandas as pd
 import glob
 import re
@@ -17,7 +17,6 @@ from sklearn.decomposition import PCA
 
 # 分かち書きの辞書を指定
 m = mecab.Tagger("-d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-ipadic-neologd/ -Owakati")       # NEologd
-#m = mecab.Tagger('-Owakati')        # ipadic
 
 # wavファイルを読み込む
 def load_wav(filename):
@@ -37,14 +36,12 @@ def load_wav(filename):
 
 # FFTを行いパワースペクトルを計算する
 def calc_pow_spectrum(wav_file, size):
-    st = 1000                       # サンプリングする開始位置
-    fs = 44100                      # サンプリングレート
+    st = 1000                       # サンプリングの開始位置
+    wave = load_wav(wav_file)       # wavファイルを読み込む
 
-    wave = load_wav(wav_file)
-
-    # 切り出した波形データ(np.hamming(size) * wave[st:st+size])にFFTを行う
     return abs(np.fft.fft(np.hamming(size) * wave[st:st+size])) ** 2
 
+# MFCCを求める
 def calc_MFCC(wav_file):
     y, sr = lr.core.load(wav_file, sr=None)
     mfcc = lr.feature.mfcc(y=y, sr=sr, n_mfcc=12)
@@ -70,7 +67,7 @@ def calc_TF_IDF_and_to_PCA(wakati_list):
 
     print("\n(発話数, 単語数)={}".format(val_tfidf.shape))
 
-    pca = PCA(n_components=367, whiten=False)
+    pca = PCA(n_components=367, whiten=False)       # n_components = 次元数
     pca.fit(val_tfidf.toarray())
 
     print("次元削減後の次元数={}".format(pca.n_components_))
@@ -79,7 +76,7 @@ def calc_TF_IDF_and_to_PCA(wakati_list):
 
 def main():
     wav_dir = "../data/wav/mixed/"             # wavファイルのディレクトリ
-    save_dir = "../train_data/mixed/"          # 保存先
+    save_dir = "../train_data/feature_vector/"          # 保存先
 
     # ベクトル化したデータを格納するための変数
     wakati_list = []
@@ -91,36 +88,38 @@ def main():
     labeled_MFCC_list = []
     unlabeled_MFCC_list = []
 
+    tfidf_unlabeled = []
+    tfidf_labeled = []
+
     # 各種データに対する処理回数のカウンタ
     cnt_prosessed_data = 0
     cnt_skip_data = 0
     cnt_UNlabeled_data = 0
     cnt_labeled_data = 0
 
-    LEN = 0                     # LEN文字以上のデータを学習データとして使う
-    SOUND_DIM = 64              # 音声の特徴量ベクトルはSOUND_DIM次元である
-    PICKUP_EMO_LV = [9]         # 学習に使う感情レベル 9は自発対話音声
+    FILE_NUM = str(11)                          # 保存するファイル名の番号
+    LEN = 0                                     # LEN文字以上のデータを学習データとして使う
+    SOUND_DIM = 367                             # 音声の特徴量ベクトルはSOUND_DIM次元である
+    PICKUP_EMO_LV = [1, 2, 3, 9]                # 学習に使う感情レベルを選ぶ."9"は自発対話音声
 
     # メタデータの読み込み
-    # INFO: 読み込ませるデータセットはここで変更する。
     meta_data = pd.read_csv("../data/MOY_metadata_5emo.csv", header=0)
-    #meta_data = pd.read_csv("/data/OGVC2_metadata.csv", header=0)
 
-    # 音声データをパワースペクトルに変換
-    # 言語データを分かち書き
+    # テキストの分かち書きとパワースペクトルへの変換を1発話ごとに行う
     for row in meta_data.values:
-        if row[3] == "{笑}" or len(row[3]) < LEN or row[4] not in PICKUP_EMO_LV:           # 声喩のみの発話とLEN文字以下の発話をスキップ
-            print("[INFO]skip")
+        if row[3] == "{笑}" or len(row[3]) < LEN or row[4] not in PICKUP_EMO_LV:    # 声喩のみの発話とLEN文字以下の発話をスキップ
+            print("[INFO]skip")     # 学習に使えない発話はスキップ
             cnt_skip_data += 1
 
             continue
         
-        if pd.isnull(row[1]):
+        # メタデータからwavファイル名を作成
+        if pd.isnull(row[1]):       # 自発対話音声と演技音声のファイルの命名規則が異なるのでここで判別。連番がないやつは演技音声
             wav_file_name = str(row[0])
         else:
-            wav_file_name = str(row[0]) + "_" + str(int(row[1]))     # FFTを行うwavファイルを指定
+            wav_file_name = str(row[0]) + "_" + str(int(row[1]))
 
-        # パワースペクトルを計算
+        # パワースペクトルとMFCCを計算
         pow_spectrum = calc_pow_spectrum(wav_dir + wav_file_name + ".wav", SOUND_DIM)
         MFCC = calc_MFCC(wav_dir + wav_file_name + ".wav")
 
@@ -148,15 +147,14 @@ def main():
         new_meta.append(row)
         cnt_prosessed_data += 1
 
+    pca_tfidf = calc_TF_IDF_and_to_PCA(wakati_list)     # TF-IDFを計算
+
+
     # LEN文字以下の発話を除いたメタデータを生成
     new_meta = pd.DataFrame(new_meta)
     new_meta.columns = ['fid', 'no', 'person', 'text', 'lv', 'emotion']  # type: ignore
-    new_meta.to_csv("../train_data/meta_data/1_meta.csv", index=True, header=1)  # type: ignore
-
-    pca_tfidf = calc_TF_IDF_and_to_PCA(wakati_list)     # TF-IDFを計算
-
-    tfidf_unlabeled = []
-    tfidf_labeled = []
+    # FIXME: ファイル名を変更して保存
+    new_meta.to_csv("../train_data/meta_data/" + FILE_NUM + "_meta.csv", index=True, header=1)  # type: ignore
 
     i = 0
     for row in new_meta.values:
@@ -168,23 +166,25 @@ def main():
 
         i += 1
 
+    print(f"ラベル付きデータ:{cnt_labeled_data}\nラベルなしデータ:{cnt_UNlabeled_data}")
+
     # テキストデータをcsvに変換して保存
     # ラベルありデータ
     labeled_tfidf = pd.DataFrame(tfidf_labeled)
     labeled_pow = pd.DataFrame(labeled_pow_list)
     labeled_mfcc = pd.DataFrame(labeled_MFCC_list)
 
-    labeled_tfidf.to_csv(save_dir+"11_TF-IDF_labeled.csv", index=True, header=1)  # type: ignore
-    labeled_pow.to_csv(save_dir+"11_POW_labeled.csv", index=False, header=1)  # type: ignore
-    labeled_mfcc.to_csv(save_dir+"11_MFCC_labeled.csv", index=False, header=1)  # type: ignore
-
     # ラベルなしデータ
     unlabeled_tfidf = pd.DataFrame(tfidf_unlabeled)
     unlabeled_pow = pd.DataFrame(unlabeled_pow_list)
     unlabeled_mfcc = pd.DataFrame(unlabeled_MFCC_list)
-    unlabeled_tfidf.to_csv(save_dir+"11_TF-IDF_un_labeled.csv", index=True, header=1)  # type: ignore
-    unlabeled_pow.to_csv(save_dir+"11_POW_un_labeled.csv", index=False, header=1)  # type: ignore
-    unlabeled_mfcc.to_csv(save_dir+"11_MFCC_un_labeled.csv", index=False, header=1)  # type: ignore
+
+    labeled_tfidf.to_csv(save_dir + FILE_NUM + "_TF-IDF_labeled.csv", index=True, header=1)       # type: ignore
+    labeled_pow.to_csv(save_dir + FILE_NUM + "_POW_labeled.csv", index=False, header=1)           # type: ignore
+    labeled_mfcc.to_csv(save_dir + FILE_NUM + "_MFCC_labeled.csv", index=False, header=1)         # type: ignore
+    unlabeled_tfidf.to_csv(save_dir + FILE_NUM + "_TF-IDF_un_labeled.csv", index=True, header=1)  # type: ignore
+    unlabeled_pow.to_csv(save_dir + FILE_NUM + "_POW_un_labeled.csv",index=False, header=1)       # type: ignore
+    unlabeled_mfcc.to_csv(save_dir + FILE_NUM + "_MFCC_un_labeled.csv", index=False, header=1)    # type: ignore
 
 if __name__ == '__main__':
     main()

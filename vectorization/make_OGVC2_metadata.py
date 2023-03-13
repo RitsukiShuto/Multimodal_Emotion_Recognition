@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 def main():
-    wav_dir = 'data/wav/mixed/'     # wavファイルのディレクトリ
+    wav_dir = 'data/wav/feature_vector/'     # wavファイルのディレクトリ
     ref_text = pd.read_csv('data/OGVC2_metadata.csv')       # テキストデータの参照元
 
     # OGVC Vol.1を読み込む
